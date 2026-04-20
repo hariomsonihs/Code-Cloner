@@ -1,0 +1,42 @@
+[
+  {
+    "title": "MDN Web Docs",
+    "type": "Website",
+    "category": "Reference",
+    "url": "https://developer.mozilla.org",
+    "description": "HTML, CSS aur JavaScript ke liye sabse best aur reliable documentation. Har web developer ka pehla stop hona chahiye yeh site.",
+    "tags": ["html", "css", "javascript", "documentation", "reference"]
+  },
+  {
+    "title": "The Odin Project",
+    "type": "Course",
+    "category": "Web Development",
+    "url": "https://www.theodinproject.com",
+    "description": "Ek free, open-source full-stack web development curriculum. Beginner se professional tak le jaata hai — HTML, CSS, JavaScript, Node.js, React sab cover hota hai.",
+    "tags": ["free", "full-stack", "beginner", "curriculum"]
+  },
+  {
+    "title": "CSS Tricks",
+    "type": "Website",
+    "category": "CSS",
+    "url": "https://css-tricks.com",
+    "description": "CSS ke baare mein sabse comprehensive resource. Flexbox, Grid, animations — sab kuch yahan milega with great examples.",
+    "tags": ["css", "flexbox", "grid", "animations", "reference"]
+  },
+  {
+    "title": "JavaScript.info",
+    "type": "Website",
+    "category": "JavaScript",
+    "url": "https://javascript.info",
+    "description": "Modern JavaScript ka sabse detailed aur beginner-friendly tutorial. Basics se advanced topics tak — closures, promises, async/await sab covered.",
+    "tags": ["javascript", "tutorial", "free", "beginner", "advanced"]
+  },
+  {
+    "title": "Roadmap.sh",
+    "type": "Website",
+    "category": "Career",
+    "url": "https://roadmap.sh",
+    "description": "Frontend, Backend, DevOps, aur bahut saare roles ke liye step-by-step learning roadmaps. Nahi pata kahan se shuru karein? Yahan aao.",
+    "tags": ["roadmap", "career", "frontend", "backend", "devops"]
+  }
+]

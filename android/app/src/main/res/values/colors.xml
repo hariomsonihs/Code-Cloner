@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand colors matching website -->
+    <color name="brand_color">#5F8EFF</color>
+    <color name="brand_color2">#3CC8A7</color>
+    <color name="brand_color3">#FF6FB3</color>
+
+    <!-- UI colors -->
+    <color name="bg_color">#F5FBFF</color>
+    <color name="surface_color">#FFFFFF</color>
+    <color name="text_color">#13233F</color>
+    <color name="muted_color">#5A6D93</color>
+
+    <!-- Bottom nav -->
+    <color name="bottom_nav_selected">#5F8EFF</color>
+    <color name="bottom_nav_unselected">#5A6D93</color>
+
+    <!-- Status bar -->
+    <color name="status_bar_color">#F5FBFF</color>
+
+    <!-- Notification -->
+    <color name="notification_color">#5F8EFF</color>
+</resources>

@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/env-config.js", "destination": "/api/env-config" }
+  ],
+  "headers": [
+    {
+      "source": "/api/env-config",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    }
+  ]
+}

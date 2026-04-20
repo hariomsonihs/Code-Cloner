@@ -1,0 +1,26 @@
+[
+  {
+    "title": "VS Code mein Multiple Cursors ka use karo",
+    "category": "VS Code",
+    "tags": ["vscode", "productivity", "shortcuts"],
+    "full_content": "<h3>Multiple Cursors kaise lagayein?</h3><p><strong>Alt + Click</strong> — jahan click karoge wahan cursor lag jayega.</p><p><strong>Ctrl + Alt + ↑/↓</strong> — upar ya neeche cursor add karo.</p><p><strong>Ctrl + D</strong> — selected word ke next occurrence par cursor add karo.</p><p>Isse tum ek saath multiple jagah edit kar sakte ho — bahut time bachta hai!</p>"
+  },
+  {
+    "title": "Git Commit Messages achhe kaise likhein",
+    "category": "Git",
+    "tags": ["git", "best-practices", "version-control"],
+    "full_content": "<h3>Achhe commit message ka format:</h3><pre><code>type: short summary (50 chars max)\n\nDetailed explanation if needed.\n\nTypes:\nfeat: new feature\nfix: bug fix\ndocs: documentation\nstyle: formatting\nrefactor: code restructure\ntest: add tests</code></pre><p><strong>Example:</strong></p><pre><code>feat: add user authentication\n\nImplemented JWT-based auth with login/logout endpoints.</code></pre>"
+  },
+  {
+    "title": "Console.log se zyada powerful debugging tricks",
+    "category": "JavaScript",
+    "tags": ["javascript", "debugging", "console"],
+    "full_content": "<h3>Console ke powerful methods:</h3><pre><code>// Table format mein data\nconsole.table([{name: 'Ram', age: 25}, {name: 'Shyam', age: 30}]);\n\n// Time measurement\nconsole.time('loop');\nfor(let i=0; i<1000; i++) {}\nconsole.timeEnd('loop');\n\n// Grouped logs\nconsole.group('User Details');\nconsole.log('Name: Ram');\nconsole.log('Age: 25');\nconsole.groupEnd();\n\n// Conditional logging\nconsole.assert(2+2 === 5, 'Math is broken!');</code></pre>"
+  },
+  {
+    "title": "CSS mein :is() aur :where() ka smart use",
+    "category": "CSS",
+    "tags": ["css", "selectors", "modern-css"],
+    "full_content": "<h3>Pehle (repetitive):</h3><pre><code>header a:hover,\nfooter a:hover,\nnav a:hover {\n  color: blue;\n}</code></pre><h3>Ab (:is() se):</h3><pre><code>:is(header, footer, nav) a:hover {\n  color: blue;\n}</code></pre><p><strong>Difference:</strong> :is() specificity highest selector ki hoti hai, :where() ki specificity 0 hoti hai — override karna easy ho jata hai.</p>"
+  }
+]

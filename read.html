@@ -1,0 +1,573 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlogSpark | Reading</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="/env-config.js"></script>
+    <link rel="stylesheet" href="app.css" />
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet"/>
+    <style>
+      .read-page {
+        max-width: 760px;
+        width: 100%;
+        margin: 0 auto;
+        position: relative;
+        z-index: 2;
+        align-self: center;
+      }
+
+      .read-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--surface-strong);
+        color: var(--text);
+        font-size: 0.88rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+
+      .read-back:hover {
+        background: rgba(255,255,255,1);
+        box-shadow: 0 4px 12px rgba(68,94,139,0.12);
+      }
+
+      .read-card {
+        margin-top: 1rem;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--surface-strong);
+        padding: clamp(1.2rem, 4vw, 2.4rem);
+        overflow: hidden;
+        min-width: 0;
+      }
+
+      .read-card .badge-row {
+        margin-top: 0;
+        margin-bottom: 1rem;
+      }
+
+      .read-card h1 {
+        margin: 0 0 0.6rem;
+        font-size: clamp(1.4rem, 4vw, 2.1rem);
+        line-height: 1.22;
+        color: var(--text);
+      }
+
+      .read-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        margin-bottom: 1.4rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .read-body {
+        font-size: 1.05rem;
+        line-height: 1.82;
+        color: #3a5278;
+        padding: 0;
+        border: none;
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+      /* Override Quill ql-editor defaults for read page */
+      .read-body.ql-editor {
+        padding: 0;
+        border: none;
+        font-size: 1.05rem;
+        line-height: 1.82;
+        color: #3a5278;
+        font-family: "Outfit", sans-serif;
+      }
+      .read-body h1, .read-body h2, .read-body h3, .read-body h4 { color: var(--text); margin-top: 1.4rem; margin-bottom: .4rem; }
+      .read-body p { margin: .7rem 0; }
+      .read-body ul, .read-body ol { padding-left: 1.6rem; margin: .6rem 0; }
+      .read-body li { margin: .25rem 0; }
+      .read-body pre { background: rgba(221,235,255,.6); border-radius: 10px; padding: .8rem; font-size: .88rem; white-space: pre-wrap; }
+      .read-body blockquote { border-left: 3px solid var(--brand-2); padding-left: .9rem; color: var(--muted); margin: .6rem 0; font-style: italic; }
+      .read-body a { color: var(--brand-2); }
+
+      .read-tags {
+        margin-top: 1.6rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+
+      .read-skeleton {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+        padding: 1.5rem;
+      }
+
+      .skel {
+        border-radius: 8px;
+        background: linear-gradient(90deg, rgba(97,126,177,0.12) 25%, rgba(97,126,177,0.22) 50%, rgba(97,126,177,0.12) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.4s infinite;
+      }
+
+      .skel-title { height: 36px; width: 75%; }
+      .skel-meta  { height: 18px; width: 40%; }
+      .skel-line  { height: 16px; width: 100%; }
+      .skel-line.short { width: 60%; }
+
+      @keyframes shimmer {
+        from { background-position: 200% 0; }
+        to   { background-position: -200% 0; }
+      }
+
+      .read-error {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: var(--muted);
+      }
+
+      .read-error h2 { margin: 0 0 0.5rem; color: var(--text); }
+
+      /* Progress Bar */
+      #readProgress {
+        position: fixed;
+        top: 0; left: 0;
+        height: 3px;
+        width: 0%;
+        background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+        z-index: 999;
+        transition: width .1s linear;
+      }
+
+      /* Action buttons */
+      .read-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .52rem 1.1rem;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--surface-strong);
+        color: var(--text);
+        font-size: .85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: .2s ease;
+        font-family: "Outfit", sans-serif;
+        box-shadow: 0 2px 8px rgba(68,94,139,.08);
+      }
+      .read-action-btn svg { width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0; }
+      .read-action-btn:hover { background:#fff; box-shadow:0 6px 18px rgba(68,94,139,.16); transform:translateY(-1px); }
+      .read-action-btn.saved { background:linear-gradient(115deg,rgba(95,142,255,.15),rgba(60,200,167,.12)); border-color:rgba(95,142,255,.4); color:var(--brand-2); }
+      .btn-save { border-color:rgba(95,142,255,.35); }
+      .btn-save:hover { background:linear-gradient(115deg,rgba(95,142,255,.1),rgba(60,200,167,.08)); color:var(--brand-2); }
+      .btn-share { border-color:rgba(60,200,167,.35); }
+      .btn-share:hover { background:linear-gradient(115deg,rgba(60,200,167,.12),rgba(95,142,255,.08)); color:#0d6e55; }
+
+      /* Related section slider */
+      .related-scroll {
+        display: flex;
+        gap: .75rem;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: .5rem;
+      }
+      .related-scroll::-webkit-scrollbar { display:none; }
+      .related-scroll .content-card {
+        flex: 0 0 220px;
+        scroll-snap-align: start;
+        min-width: 0;
+      }
+      .related-dots {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        margin-top: .65rem;
+      }
+      .related-dot {
+        width: 7px; height: 7px;
+        border-radius: 999px;
+        background: rgba(97,126,177,.25);
+        cursor: pointer;
+        transition: .25s ease;
+        border: none;
+        padding: 0;
+      }
+      .related-dot.active { width:22px; background:var(--brand-2); }
+
+      /* Back to Top */
+      #backToTop {
+        position: fixed;
+        bottom: 5rem;
+        right: 1.2rem;
+        width: 42px; height: 42px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--surface-strong);
+        color: var(--text);
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow);
+        z-index: 40;
+        transition: .2s ease;
+      }
+      #backToTop:hover { transform: translateY(-3px); }
+      #backToTop.show { display: flex; }
+
+      /* Reactions */
+      .react-btn {
+        display:inline-flex;align-items:center;gap:.35rem;
+        padding:.42rem .85rem;border-radius:999px;
+        border:1px solid var(--line);background:var(--surface-strong);
+        font-size:.9rem;cursor:pointer;transition:.2s;font-family:"Outfit",sans-serif;
+        font-weight:600;color:var(--text);
+      }
+      .react-btn:hover { transform:translateY(-2px);box-shadow:0 4px 12px rgba(68,94,139,.15); }
+      .react-btn.reacted { background:linear-gradient(115deg,rgba(95,142,255,.15),rgba(60,200,167,.12));border-color:rgba(95,142,255,.4);color:var(--brand-2); }
+
+      /* Comments */
+      .comment-item {
+        display:flex;gap:.65rem;padding:.75rem 0;
+        border-bottom:1px solid rgba(97,126,177,.1);
+      }
+      .comment-item:last-child { border-bottom:none; }
+      .comment-avatar {
+        width:34px;height:34px;border-radius:999px;flex-shrink:0;
+        background:linear-gradient(135deg,var(--brand-2),var(--brand-1));
+        color:#fff;font-weight:700;font-size:.82rem;
+        display:flex;align-items:center;justify-content:center;
+        font-family:"Space Grotesk",sans-serif;
+      }
+      .comment-body { flex:1;min-width:0; }
+      .comment-name { font-weight:600;font-size:.85rem;color:var(--text); }
+      .comment-time { font-size:.72rem;color:var(--muted);margin-left:.4rem; }
+      .comment-text { font-size:.88rem;color:#3a5278;margin-top:.2rem;line-height:1.55; }
+
+      /* Views badge */
+      .views-badge {
+        display:inline-flex;
+        align-items:center;
+        gap:.3rem;
+        font-size:.82rem;
+        color:var(--muted);
+      }
+
+      /* ── Project detail styles ── */
+      .proj-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.4rem;
+      }
+
+      .proj-link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.48rem 1rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: 0.2s ease;
+        border: 1px solid transparent;
+      }
+
+      .proj-link-btn svg {
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+
+      .proj-live   { background: linear-gradient(115deg,#3cc8a7,#5f8eff); color:#fff; }
+      .proj-github { background: #24292e; color: #fff; }
+      .proj-output { background: linear-gradient(115deg,#8b5cf6,#ec4899); color: #fff; }
+      .proj-link-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.18); }
+
+      .proj-section-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin: 1.4rem 0 0.5rem;
+      }
+
+      .proj-code-wrap {
+        margin-top: 1.6rem;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        overflow: hidden;
+      }
+
+      .proj-tabs {
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: none;
+        background: rgba(221,235,255,0.45);
+        border-bottom: 1px solid var(--line);
+        gap: 0;
+      }
+
+      .proj-tabs::-webkit-scrollbar { display: none; }
+
+      .proj-tab {
+        flex-shrink: 0;
+        padding: 0.55rem 1rem;
+        font-size: 0.82rem;
+        font-weight: 500;
+        font-family: Consolas, monospace;
+        color: var(--muted);
+        background: transparent;
+        border: none;
+        border-right: 1px solid var(--line);
+        cursor: pointer;
+        transition: 0.18s ease;
+        white-space: nowrap;
+      }
+
+      .proj-tab:hover { background: rgba(95,142,255,0.08); color: var(--text); }
+
+      .proj-tab.active {
+        background: rgba(255,255,255,0.9);
+        color: var(--brand-2);
+        font-weight: 700;
+        border-bottom: 2px solid var(--brand-2);
+      }
+
+      .proj-panel { display: none; }
+      .proj-panel.active { display: block; }
+
+      .proj-code-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 0.8rem;
+        background: rgba(221,235,255,0.3);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .proj-code-filename {
+        font-size: 0.78rem;
+        font-family: Consolas, monospace;
+        color: var(--muted);
+        flex: 1;
+      }
+
+      .proj-copy-btn, .proj-dl-btn {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.26rem 0.65rem;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.8);
+        color: #2d446f;
+        cursor: pointer;
+        transition: 0.18s ease;
+        white-space: nowrap;
+      }
+
+      .proj-copy-btn:hover { background: rgba(95,142,255,0.12); border-color: rgba(95,142,255,0.3); }
+      .proj-dl-btn:hover   { background: rgba(60,200,167,0.12); border-color: rgba(60,200,167,0.3); }
+
+      .proj-pre {
+        margin: 0;
+        padding: 1rem;
+        overflow-x: auto;
+        background: rgba(240,246,255,0.6);
+        max-height: 480px;
+        overflow-y: auto;
+      }
+
+      .proj-pre code {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.86rem;
+        color: #1a355f;
+        line-height: 1.6;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body data-page="read">
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+    <div class="bg-orb orb-c"></div>
+
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+    <aside class="side-drawer" id="sideDrawer">
+      <div class="drawer-top">
+        <div class="brand"><span class="brand-dot"></span><div><strong>BlogSpark</strong><small>Content Hub</small></div></div>
+        <button class="icon-btn" id="closeDrawer" aria-label="Close menu">
+          <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="drawer-section-label">Navigation</div>
+      <nav class="drawer-nav">
+        <a href="index.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Home</a>
+        <a href="articles.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Articles</a>
+        <a href="tips.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-4 12.8V19h8v-3.2A7 7 0 0 0 12 3z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>Tips &amp; Tricks</a>
+        <a href="facts.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Facts</a>
+        <a href="projects.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Projects</a>
+        <a href="resources.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Resources</a>
+        <a href="saved.html" class="nav-link js-nav-link saved-drawer-link"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>🔖 Saved <span id="drawerBmCount" style="margin-left:auto;background:var(--brand-2);color:#fff;border-radius:999px;padding:.1rem .45rem;font-size:.72rem;font-weight:700;display:none"></span></a>
+        <a href="about.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
+        <a href="about.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
+      </nav>
+      <div class="drawer-footer">
+        <div class="drawer-footer-label">Find me on</div>
+        <div class="drawer-socials">
+          <a href="https://instagram.com/hariomsonihs" target="_blank" rel="noopener" class="drawer-social-btn insta" title="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+          <a href="https://linkedin.com/in/hariomsonihs" target="_blank" rel="noopener" class="drawer-social-btn linkedin" title="LinkedIn"><svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
+          <a href="https://github.com/hariomsonihs" target="_blank" rel="noopener" class="drawer-social-btn github" title="GitHub"><svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></a>
+        </div>
+      </div>
+      <div class="drawer-credit">Designed &amp; built by<br/><a href="https://linkedin.com/in/hariomsonihs" target="_blank" rel="noopener" class="credit-link"><span>Hariom Kumar</span></a></div>
+    </aside>
+
+    <header class="topbar">
+      <a class="brand" href="index.html"><span class="brand-dot"></span><div><strong>BlogSpark</strong><small>Reading</small></div></a>
+      <nav class="desktop-nav">
+        <a href="index.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Home</a>
+        <a href="articles.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Articles</a>
+        <a href="tips.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-4 12.8V19h8v-3.2A7 7 0 0 0 12 3z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>Tips</a>
+        <a href="facts.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Facts</a>
+        <a href="projects.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Projects</a>
+        <a href="resources.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Resources</a>
+      </nav>
+      <button class="icon-btn menu-btn" id="openDrawer" aria-label="Open menu">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+      </button>
+    </header>
+
+    <!-- Reading Progress Bar -->
+    <div id="readProgress"></div>
+
+    <div class="read-page">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-top:1rem">
+        <a class="read-back" id="backBtn" href="articles.html">← Back</a>
+        <div style="display:flex;gap:.5rem">
+          <button class="read-action-btn btn-save" id="bookmarkBtn" title="Save">
+            <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>Save
+          </button>
+          <button class="read-action-btn btn-share" id="shareBtn" title="Share">
+            <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share
+          </button>
+        </div>
+      </div>
+
+      <div class="read-card" id="readCard">
+        <div class="read-skeleton">
+          <div class="skel skel-title"></div>
+          <div class="skel skel-meta"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line short"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line short"></div>
+        </div>
+      </div>
+
+      <!-- Related Content -->
+      <div id="relatedSection" style="display:none;margin-top:1.4rem">
+        <div class="section-head" style="margin-bottom:.75rem">
+          <h2 style="margin:0;font-size:1.1rem">✨ You might also like</h2>
+        </div>
+        <div class="related-scroll" id="relatedGrid"></div>
+        <div class="related-dots" id="relatedDots"></div>
+      </div>
+
+      <!-- Reactions + Comments -->
+      <div id="engageSection" style="display:none;margin-top:1.2rem">
+        <div class="section" style="margin-top:0;margin-bottom:1rem;padding:1rem">
+          <div style="font-size:.82rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.65rem">Reactions</div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="reactionsRow">
+            <button class="react-btn" data-key="like">&#128077; <span id="react_like">0</span></button>
+            <button class="react-btn" data-key="love">&#10084; <span id="react_love">0</span></button>
+            <button class="react-btn" data-key="fire">&#128293; <span id="react_fire">0</span></button>
+            <button class="react-btn" data-key="mind">&#129327; <span id="react_mind">0</span></button>
+            <button class="react-btn" data-key="clap">&#128079; <span id="react_clap">0</span></button>
+          </div>
+        </div>
+        <div class="section" style="margin-top:0;padding:1rem">
+          <div style="font-size:.82rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem">Comments <span id="commentCount" style="font-size:.75rem;font-weight:600;color:var(--brand-2);margin-left:.3rem"></span></div>
+          <div id="commentsList" style="margin-bottom:.9rem"></div>
+          <div id="commentForm">
+            <textarea id="commentText" class="input" rows="3" placeholder="Write a comment..." style="resize:vertical;font-family:Outfit,sans-serif;font-size:.92rem"></textarea>
+            <div style="display:flex;align-items:center;gap:.6rem;margin-top:.5rem;flex-wrap:wrap">
+              <input id="commentName" class="input" type="text" placeholder="Your name (optional)" style="flex:1;min-width:140px"/>
+              <button id="submitComment" class="read-action-btn" style="background:linear-gradient(115deg,var(--brand-2),var(--brand-1));color:#fff;border-color:transparent">Post Comment</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feedback Button -->
+      <div style="text-align:center;margin:1.4rem 0 .5rem">
+        <button id="feedbackBtn" class="read-action-btn" style="background:linear-gradient(115deg,rgba(37,211,102,.12),rgba(37,211,102,.06));border-color:rgba(37,211,102,.4);color:#0a6e2e;font-size:.88rem;padding:.55rem 1.2rem">
+          💬 Report / Feedback
+        </button>
+      </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(23,31,52,.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem">
+      <div style="background:#fff;border-radius:24px;padding:1.5rem;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(49,76,122,.22);border:1px solid var(--line)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h3 style="margin:0;font-size:1.05rem;color:var(--text)">💬 Report / Feedback</h3>
+          <button id="feedbackClose" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);line-height:1">✕</button>
+        </div>
+        <p style="margin:0 0 .75rem;font-size:.85rem;color:var(--muted)">Koi problem hai ya suggestion? Seedha WhatsApp pe bhejo.</p>
+        <select id="feedbackType" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:.55rem .7rem;font-size:.9rem;font-family:'Outfit',sans-serif;color:var(--text);background:#fff;margin-bottom:.75rem">
+          <option value="">-- Feedback type chunein --</option>
+          <option value="Galat information">❌ Galat information</option>
+          <option value="Broken link">🔗 Broken link</option>
+          <option value="Suggestion">💡 Suggestion</option>
+          <option value="Other">📝 Other</option>
+        </select>
+        <textarea id="feedbackText" rows="4" placeholder="Apna message yahan likhein..." style="width:100%;border:1px solid var(--line);border-radius:10px;padding:.65rem .75rem;font-size:.92rem;font-family:'Outfit',sans-serif;color:var(--text);resize:vertical;outline:none"></textarea>
+        <div style="display:flex;gap:.6rem;margin-top:.9rem;justify-content:flex-end">
+          <button id="feedbackCancel" class="read-action-btn">Cancel</button>
+          <button id="feedbackSend" class="read-action-btn" style="background:linear-gradient(115deg,#25d366,#128c7e);color:#fff;border-color:transparent">Send on WhatsApp ↗</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Back to Top -->
+    <button id="backToTop" title="Back to top">↑</button>
+
+    <nav class="bottom-nav">
+      <a href="index.html"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z" /></svg><span>Home</span></a>
+      <a href="articles.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8 9h8M8 12h8M8 15h5" /></svg><span>Articles</span></a>
+      <a href="tips.html"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-4 12.8V19h8v-3.2A7 7 0 0 0 12 3zM9 21h6" /></svg><span>Tips</span></a>
+      <a href="projects.html"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4zM9 7V5h6v2" /></svg><span>Projects</span></a>
+      <a href="resources.html"><svg viewBox="0 0 24 24"><path d="M13.5 3H5v18h14V8.5L13.5 3zM13 4.5V8h3.5M9 12h6M9 15h6M9 9h3" /></svg><span>Resources</span></a>
+    </nav>
+
+    <script type="module" src="read.js"></script>
+  </body>
+</html>
+

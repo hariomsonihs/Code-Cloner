@@ -1,0 +1,23 @@
+# Environment variables - KABHI PUSH MAT KARO
+.env
+.env.local
+.env.production
+env-config.js
+
+# Admin panel - push nahi karna
+web-admin/
+
+# Android secrets
+android/local.properties
+android/app/google-services.json
+android/keystore/
+*.jks
+*.keystore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

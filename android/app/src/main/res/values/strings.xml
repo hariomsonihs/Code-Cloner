@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BlogSpark</string>
+    <string name="app_description">Your Personal Learning Hub</string>
+    <string name="share_via">Share via</string>
+    <string name="downloading">Downloading…</string>
+    <string name="no_internet">No internet connection</string>
+    <string name="whatsapp_not_installed">WhatsApp is not installed</string>
+    <string name="refresh">Refresh</string>
+    <string name="open_in_browser">Open in Browser</string>
+</resources>

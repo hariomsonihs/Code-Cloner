@@ -1,0 +1,26 @@
+[
+  {
+    "title": "JavaScript sirf 10 din mein banaya gaya tha",
+    "category": "History",
+    "body": "Brendan Eich ne JavaScript ko 1995 mein sirf 10 din mein design kiya tha jab woh Netscape mein kaam karte the. Pehle iska naam Mocha tha, phir LiveScript, aur finally JavaScript rakha gaya — Java ki popularity ka faayda uthane ke liye.",
+    "source_url": "https://en.wikipedia.org/wiki/JavaScript"
+  },
+  {
+    "title": "Python ka naam ek TV show se aaya hai",
+    "category": "History",
+    "body": "Guido van Rossum ne Python ka naam 'Monty Python's Flying Circus' — ek British comedy TV show — se liya tha. Unhone chahte the ki language ka naam short, unique aur thoda mysterious ho.",
+    "source_url": "https://docs.python.org/3/faq/general.html"
+  },
+  {
+    "title": "Pehla computer bug ek asli keeda tha",
+    "category": "History",
+    "body": "1947 mein Grace Hopper aur unki team ne Harvard Mark II computer mein ek asli moth (keeda) dhundha jo relay mein phansa tha aur computer ko crash kar raha tha. Unhone use tape karke logbook mein chipkaya — yahi se 'debugging' word aaya.",
+    "source_url": "https://en.wikipedia.org/wiki/Software_bug"
+  },
+  {
+    "title": "World Wide Web aur Internet alag cheezein hain",
+    "category": "Technology",
+    "body": "Internet ek global network hai jo computers ko connect karta hai. World Wide Web (WWW) ek service hai jo internet par chalti hai — websites aur hyperlinks ka system. Tim Berners-Lee ne 1989 mein WWW invent kiya tha.",
+    "source_url": "https://www.w3.org/WWW/"
+  }
+]

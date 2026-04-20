@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base app theme -->
+    <style name="Theme.BlogSpark" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_color</item>
+        <item name="colorPrimaryVariant">@color/brand_color2</item>
+        <item name="colorOnPrimary">@color/surface_color</item>
+        <item name="colorSecondary">@color/brand_color2</item>
+        <item name="colorOnSecondary">@color/surface_color</item>
+        <item name="android:statusBarColor">@color/status_bar_color</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/surface_color</item>
+        <item name="android:windowBackground">@color/bg_color</item>
+    </style>
+
+    <!-- Splash screen theme -->
+    <style name="Theme.BlogSpark.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/bg_color</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/bg_color</item>
+        <item name="postSplashScreenTheme">@style/Theme.BlogSpark</item>
+    </style>
+
+</resources>

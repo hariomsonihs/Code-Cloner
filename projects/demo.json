@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Todo App with Local Storage",
+    "category": "Web Development",
+    "level": "Beginner",
+    "stack": "HTML, CSS, JavaScript",
+    "description": "<p>Ek simple lekin functional Todo application banao jo browser ke Local Storage mein data save kare. Page refresh karne par bhi tasks remain karein.</p><h3>Features:</h3><ul><li>Task add, complete aur delete karna</li><li>Local Storage mein persist karna</li><li>Filter: All, Active, Completed</li></ul>",
+    "tags": ["html", "css", "javascript", "localstorage", "beginner"]
+  },
+  {
+    "name": "Weather App using OpenWeather API",
+    "category": "Web Development",
+    "level": "Intermediate",
+    "stack": "HTML, CSS, JavaScript, REST API",
+    "description": "<p>OpenWeather API use karke ek weather app banao jo kisi bhi city ka current weather dikhaye.</p><h3>Features:</h3><ul><li>City search karna</li><li>Temperature, humidity, wind speed dikhana</li><li>Weather icon aur description</li><li>Geolocation se current location ka weather</li></ul>",
+    "tags": ["api", "javascript", "fetch", "intermediate", "weather"]
+  },
+  {
+    "name": "Expense Tracker",
+    "category": "Web Development",
+    "level": "Intermediate",
+    "stack": "HTML, CSS, JavaScript, Chart.js",
+    "description": "<p>Ek expense tracker app banao jisme income aur expenses track kar sako aur Chart.js se visual summary dekh sako.</p><h3>Features:</h3><ul><li>Income aur expense add karna</li><li>Balance calculate karna</li><li>Pie chart se breakdown dekhna</li><li>Local Storage mein save karna</li></ul>",
+    "tags": ["javascript", "chartjs", "localstorage", "intermediate"]
+  }
+]

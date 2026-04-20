@@ -1,0 +1,26 @@
+[
+  {
+    "title": "JavaScript Closures Explained Simply",
+    "category": "JavaScript",
+    "read_time": "5 min read",
+    "short_description": "Closures ek powerful concept hai JavaScript mein. Is article mein hum simple examples se samjhenge ki closures kaise kaam karte hain.",
+    "full_content": "<h2>Closure kya hota hai?</h2><p>Jab ek function apne outer scope ke variables ko yaad rakhta hai even after outer function execute ho chuka ho, use closure kehte hain.</p><pre><code>function counter() {\n  let count = 0;\n  return function() {\n    count++;\n    return count;\n  };\n}\nconst inc = counter();\nconsole.log(inc()); // 1\nconsole.log(inc()); // 2</code></pre><p>Yahan inner function <code>count</code> variable ko closure ke through access karta hai.</p>",
+    "tags": ["javascript", "closures", "functions", "beginner"]
+  },
+  {
+    "title": "CSS Grid vs Flexbox — Kab Kya Use Karein?",
+    "category": "CSS",
+    "read_time": "6 min read",
+    "short_description": "CSS Grid aur Flexbox dono powerful layout tools hain. Lekin dono ka use case alag hai — aao samjhein kab kaunsa use karna chahiye.",
+    "full_content": "<h2>Flexbox — 1D Layout</h2><p>Flexbox ek direction mein kaam karta hai — ya toh row ya column. Jab tumhe items ko ek line mein align karna ho, Flexbox best hai.</p><pre><code>.container {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n}</code></pre><h2>Grid — 2D Layout</h2><p>Grid rows aur columns dono mein kaam karta hai. Complex page layouts ke liye Grid use karo.</p><pre><code>.container {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  gap: 1rem;\n}</code></pre>",
+    "tags": ["css", "grid", "flexbox", "layout"]
+  },
+  {
+    "title": "Python List Comprehension — Clean Code Likhne Ka Tarika",
+    "category": "Python",
+    "read_time": "4 min read",
+    "short_description": "List comprehension Python ka ek elegant feature hai jo loops ko ek line mein likhne deta hai. Isse code readable aur fast banta hai.",
+    "full_content": "<h2>Normal Loop vs List Comprehension</h2><p>Pehle normal loop:</p><pre><code>squares = []\nfor i in range(10):\n    squares.append(i**2)</code></pre><p>Ab list comprehension se:</p><pre><code>squares = [i**2 for i in range(10)]</code></pre><h2>Condition ke saath</h2><pre><code>evens = [i for i in range(20) if i % 2 == 0]</code></pre><p>Yeh sirf even numbers ki list banata hai.</p>",
+    "tags": ["python", "list-comprehension", "beginner", "clean-code"]
+  }
+]
