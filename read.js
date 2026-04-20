@@ -74,13 +74,15 @@ bookmarkBtn.addEventListener("click", () => {
 });
 
 // ── Share ──
+const APK_URL = "https://github.com/hariomsonihs/Code-Cloner/releases/download/v1.0/code_cloner_v1.0.apk";
 shareBtn.addEventListener("click", async () => {
   const title = document.querySelector("#readCard h1")?.textContent || document.title;
   const url = location.href;
+  const shareText = `${title}\n\n🔗 Read here: ${url}\n\n📱 Download Code Cloner App (Android):\n${APK_URL}`;
   if (navigator.share) {
-    try { await navigator.share({ title, url }); return; } catch {}
+    try { await navigator.share({ title, text: shareText, url }); return; } catch {}
   }
-  await navigator.clipboard.writeText(url);
+  await navigator.clipboard.writeText(shareText);
   shareBtn.innerHTML = `<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6L9 17l-5-5"/></svg>Copied!`;
   setTimeout(() => {
     shareBtn.innerHTML = `<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share`;
