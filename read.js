@@ -74,7 +74,7 @@ bookmarkBtn.addEventListener("click", () => {
 });
 
 // ── Share ──
-const APK_URL = "https://drive.google.com/uc?export=download&id=1AHsANCh92Kp5Zqkqj47bbsI9ZiDv6KwJ";
+const APK_URL = "https://drive.google.com/uc?export=download&id=1ke4T0rsmXHIUNlYQmNymUshvRZb7_Lfp";
 shareBtn.addEventListener("click", async () => {
   const title = document.querySelector("#readCard h1")?.textContent || document.title;
   const url = location.href;
