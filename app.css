@@ -1129,6 +1129,26 @@ a {
   .topbar {
     top: 0.42rem;
     border-radius: 20px;
+    padding: 0.52rem 0.65rem;
+    gap: 0.5rem;
+  }
+
+  .brand strong {
+    font-size: 0.88rem;
+  }
+
+  .brand small {
+    font-size: 0.68rem;
+  }
+
+  .brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
   }
 
   .desktop-nav {
