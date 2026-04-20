@@ -6,6 +6,14 @@
     {
       "source": "/api/env-config",
       "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    },
+    {
+      "source": "/api/send-notification",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://code-cloner-admin.vercel.app" },
+        { "key": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
     }
   ]
 }
