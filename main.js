@@ -41,24 +41,41 @@ function banner(cls, icon, imageUrl) {
   return `<div class="card-banner ${cls}"><span class="card-banner-icon">${icon}</span><div class="card-banner-shape"></div><div class="card-banner-shape2"></div></div>`;
 }
 
-// ── Featured Banner ──
+// ── Featured Slider ──
 async function loadFeatured() {
   const types = ["articles","tips","facts","projects","resources"];
-  for (const t of types) {
-    const q = query(collection(db, t), where("featured", "==", true), limit(1));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const d = snap.docs[0].data();
-      const id = snap.docs[0].id;
-      const title = d.title || d.name || "Featured";
-      const desc  = preview(d.description || d.body || d.content || "", 180);
-      document.getElementById("featuredTitle").textContent = title;
-      document.getElementById("featuredDesc").textContent  = desc;
-      document.getElementById("featuredLink").href = `read.html?type=${t}&id=${id}`;
-      document.getElementById("featuredBanner").classList.add("show");
-      return;
-    }
-  }
+  const bannerCls = { articles:"banner-article", tips:"banner-tip", facts:"banner-fact", projects:"banner-project", resources:"banner-resource" };
+  const icons     = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗" };
+  const badgeCls  = { articles:"", tips:"badge-green", facts:"badge-orange", projects:"badge-purple", resources:"badge-muted" };
+  let all = [];
+  await Promise.all(types.map(async t => {
+    try {
+      const snap = await getDocs(query(collection(db, t), where("featured", "==", true), limit(5)));
+      snap.docs.forEach(d => all.push({ id: d.id, type: t, data: d.data() }));
+    } catch {}
+  }));
+  if (!all.length) return;
+  const section = document.getElementById("featuredSection");
+  const list    = document.getElementById("featuredList");
+  section.style.display = "block";
+  list.innerHTML = all.map(({ id, type, data: d }) => {
+    const title = d.title || d.name || "Featured";
+    const desc  = preview(d.description || d.body || d.content || "", 120);
+    const imgUrl = d.imageUrl || "";
+    return `<a class="content-card" href="read.html?type=${type}&id=${encodeURIComponent(id)}">
+      ${banner(bannerCls[type], icons[type], imgUrl)}
+      <div class="card-top">
+        <div class="badge-row">
+          <span class="badge ${badgeCls[type]}">${icons[type]} ${type.charAt(0).toUpperCase()+type.slice(1)}</span>
+          ${d.category ? `<span class="badge">${escapeHtml(d.category)}</span>` : ""}
+        </div>
+        <h3>${escapeHtml(title)}</h3>
+        <p class="card-desc">${escapeHtml(desc)}</p>
+      </div>
+      <div class="card-bottom"><div class="card-actions"><span class="small-btn">⭐ Read Now →</span></div></div>
+    </a>`;
+  }).join("");
+  initSwiper("featuredList", "dotFeatured");
 }
 loadFeatured();
 
