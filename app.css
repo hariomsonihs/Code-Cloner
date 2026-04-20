@@ -1439,6 +1439,214 @@ a {
   flex-shrink: 0;
 }
 
+/* ── APK Download Section ── */
+.apk-section {
+  background: linear-gradient(135deg, rgba(95,142,255,0.08), rgba(60,200,167,0.06));
+  border-color: rgba(95,142,255,0.28);
+}
+
+.apk-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  overflow: hidden;
+}
+
+.apk-glow {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(95,142,255,0.18) 0%, transparent 70%);
+  top: -100px;
+  right: -80px;
+  pointer-events: none;
+}
+
+.apk-left {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.apk-icon-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.apk-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 2px solid rgba(95,142,255,0.3);
+  box-shadow: 0 8px 24px rgba(95,142,255,0.2);
+}
+
+.apk-android-badge {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #3cc8a7, #5f8eff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border: 2px solid #fff;
+}
+
+.apk-android-badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+.apk-info { min-width: 0; }
+
+.apk-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--brand-2);
+  background: rgba(95,142,255,0.1);
+  border-radius: 999px;
+  padding: .18rem .6rem;
+  margin-bottom: .45rem;
+}
+
+.apk-title {
+  margin: 0 0 .35rem;
+  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.apk-desc {
+  margin: 0 0 .65rem;
+  color: var(--muted);
+  font-size: .88rem;
+  line-height: 1.55;
+}
+
+.apk-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.apk-features span {
+  font-size: .74rem;
+  font-weight: 500;
+  color: #2d5a8e;
+  background: rgba(95,142,255,0.1);
+  border: 1px solid rgba(95,142,255,0.2);
+  border-radius: 999px;
+  padding: .18rem .55rem;
+}
+
+.apk-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  flex-shrink: 0;
+}
+
+.apk-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  background: linear-gradient(115deg, var(--brand-1), var(--brand-2));
+  color: #fff;
+  font-weight: 700;
+  font-size: .92rem;
+  border-radius: 14px;
+  padding: .75rem 1.4rem;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(95,142,255,0.3);
+  transition: .22s ease;
+  white-space: nowrap;
+}
+
+.apk-download-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.apk-download-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(95,142,255,0.4);
+}
+
+.apk-note {
+  margin: 0;
+  font-size: .72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .apk-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .apk-right {
+    width: 100%;
+  }
+  .apk-download-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Drawer APK Button ── */
+.drawer-apk-btn {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .7rem .85rem;
+  border-radius: 14px;
+  background: linear-gradient(115deg, rgba(95,142,255,0.12), rgba(60,200,167,0.1));
+  border: 1px solid rgba(95,142,255,0.25);
+  color: var(--text);
+  text-decoration: none;
+  transition: .2s ease;
+}
+
+.drawer-apk-btn:hover {
+  background: linear-gradient(115deg, rgba(95,142,255,0.2), rgba(60,200,167,0.16));
+  border-color: rgba(95,142,255,0.4);
+  transform: translateY(-1px);
+}
+
+.drawer-apk-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3cc8a7, #5f8eff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.drawer-apk-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* ── Credit link ── */
 .credit-link { text-decoration: none; }
 .credit-link span {
