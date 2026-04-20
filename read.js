@@ -183,6 +183,7 @@ function renderArticle(data) {
       ${data.createdAt ? `<span>📅 ${formatDate(data.createdAt)}</span>` : ""}
       ${data.readTime ? `<span>⏱ ${esc(data.readTime)}</span>` : ""}
       <span class="views-badge" style="display:none"></span>
+      ${AUTHOR_HTML}
     </div>
     <div class="read-body ql-editor" id="readBodyHtml"></div>
     ${tags.length ? `<div class="read-tags">${tags.map(t => `<span class="badge">${esc(t)}</span>`).join("")}</div>` : ""}
@@ -202,6 +203,7 @@ function renderTip(data) {
     <div class="read-meta">
       ${data.createdAt ? `<span>📅 ${formatDate(data.createdAt)}</span>` : ""}
       <span class="views-badge" style="display:none"></span>
+      ${AUTHOR_HTML}
     </div>
     <div class="read-body ql-editor" id="tipBodyHtml"></div>
     ${data.example ? `
@@ -227,6 +229,7 @@ function renderFact(data) {
       ${data.createdAt ? `<span>📅 ${formatDate(data.createdAt)}</span>` : ""}
       <span class="views-badge" style="display:none"></span>
       ${data.source ? `<span>🔗 <a href="${esc(data.source)}" target="_blank" rel="noopener" style="color:var(--brand-2)">Source</a></span>` : ""}
+      ${AUTHOR_HTML}
     </div>
     <div class="read-body">${esc(data.body || "")}</div>
   `;
@@ -273,6 +276,7 @@ function renderProject(data) {
     <div class="read-meta">
       ${data.createdAt ? `<span>📅 ${formatDate(data.createdAt)}</span>` : ""}
       <span class="views-badge" style="display:none"></span>
+      ${AUTHOR_HTML}
     </div>
     ${linksHtml ? `<div class="proj-links">${linksHtml}</div>` : ""}
     <div class="proj-section-label">About this project</div>
@@ -328,6 +332,7 @@ function renderResource(data) {
       ${data.createdAt ? `<span>📅 ${formatDate(data.createdAt)}</span>` : ""}
       <span class="views-badge" style="display:none"></span>
       ${data.url ? `<a href="${esc(data.url)}" target="_blank" rel="noopener" style="color:var(--brand-2)">🔗 Open Resource</a>` : ""}
+      ${AUTHOR_HTML}
     </div>
     <div class="read-body">${esc(data.description || "")}</div>
     ${data.tags ? `<div class="read-tags">${data.tags.split(",").map(t=>`<span class="badge">${esc(t.trim())}</span>`).join("")}</div>` : ""}
@@ -344,6 +349,8 @@ function renderError(msg) {
     </div>
   `;
 }
+
+const AUTHOR_HTML = `<span>✍️ <a href="https://linkedin.com/in/hariomsonihs" target="_blank" rel="noopener" style="color:var(--brand-2);font-weight:600;text-decoration:none">Hariom Kumar</a></span>`;
 
 function makeSlug(text) {
   return String(text || "").toLowerCase().trim()
