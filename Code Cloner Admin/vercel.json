@@ -1,5 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/env-config.js", "destination": "/api/env-config" }
-  ]
-}
