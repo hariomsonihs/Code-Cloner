@@ -151,7 +151,13 @@ async function subscribePush() {
     if (permission !== "granted") return;
 
     const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
-    if (token) localStorage.setItem("fcm_token", token);
+    if (token) {
+      localStorage.setItem("fcm_token", token);
+      // Token Firestore mein save karo
+      const { getFirestore, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js");
+      const fdb = getFirestore(app);
+      await setDoc(doc(fdb, "fcm_tokens", token), { token, updatedAt: new Date().toISOString() });
+    }
 
     // Foreground notification
     onMessage(messaging, (payload) => {

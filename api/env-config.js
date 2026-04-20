@@ -7,10 +7,9 @@ export default function handler(req, res) {
     messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.FIREBASE_APP_ID,
     measurementId: process.env.FIREBASE_MEASUREMENT_ID,
-    vapidKey: process.env.FIREBASE_VAPID_KEY,
   };
 
   res.setHeader("Content-Type", "application/javascript");
   res.setHeader("Cache-Control", "no-store");
-  res.send(`self.__env = ${JSON.stringify(config)};`);
+  res.send(`self.__env = ${JSON.stringify(config)}; if(typeof window!=="undefined") window.__env = self.__env;`);
 }
