@@ -74,7 +74,7 @@ bookmarkBtn.addEventListener("click", () => {
 });
 
 // ── Share ──
-const APK_URL = "https://github.com/hariomsonihs/Code-Cloner/releases/download/v1.0/code_cloner_v1.0.apk";
+const APK_URL = "https://drive.google.com/uc?export=download&id=1AHsANCh92Kp5Zqkqj47bbsI9ZiDv6KwJ";
 shareBtn.addEventListener("click", async () => {
   const title = document.querySelector("#readCard h1")?.textContent || document.title;
   const url = location.href;
