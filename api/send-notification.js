@@ -20,6 +20,8 @@ export default async function handler(req, res) {
 
     if (!getApps().length) {
       const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      // private_key mein \n properly replace karo
+      sa.private_key = sa.private_key.replace(/\\n/g, "\n");
       initializeApp({ credential: cert(sa) });
     }
 
