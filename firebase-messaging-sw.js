@@ -17,11 +17,11 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   const { title, body, data } = payload.notification || payload.data || {};
-  self.registration.showNotification(title || "BlogSpark", {
+  self.registration.showNotification(title || "Code Cloner", {
     body: body || "",
     icon: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg",
     data: data || payload.data || {},
-    tag: payload.data?.id || "blogspark",
+    tag: payload.data?.id || "Code Cloner",
     renotify: true,
   });
 });

@@ -171,7 +171,7 @@ function showInAppToast(title, body, data) {
   toast.innerHTML = `
     <div class="push-toast-icon">🔔</div>
     <div class="push-toast-text">
-      <strong>${escHtml(title || "BlogSpark")}</strong>
+      <strong>${escHtml(title || "Code Cloner")}</strong>
       <span>${escHtml(body || "")}</span>
     </div>
     <button class="push-toast-close" onclick="this.parentElement.remove()">✕</button>

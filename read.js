@@ -187,7 +187,7 @@ function renderArticle(data) {
     <div class="read-body ql-editor" id="readBodyHtml"></div>
     ${tags.length ? `<div class="read-tags">${tags.map(t => `<span class="badge">${esc(t)}</span>`).join("")}</div>` : ""}
   `;
-  document.title = `BlogSpark | ${data.title}`;
+  document.title = `Code Cloner | ${data.title}`;
   const bodyEl = document.getElementById("readBodyHtml");
   if (bodyEl) bodyEl.innerHTML = plainToHtml(data.content || data.description || "");
 }
@@ -211,7 +211,7 @@ function renderTip(data) {
       </div>` : ""}
     ${data.tags ? `<div class="read-tags">${data.tags.split(",").map(t=>`<span class="badge">${esc(t.trim())}</span>`).join("")}</div>` : ""}
   `;
-  document.title = `BlogSpark | ${data.title}`;
+  document.title = `Code Cloner | ${data.title}`;
   const tipEl = document.getElementById("tipBodyHtml");
   if (tipEl) tipEl.innerHTML = plainToHtml(data.body || "");
 }
@@ -230,7 +230,7 @@ function renderFact(data) {
     </div>
     <div class="read-body">${esc(data.body || "")}</div>
   `;
-  document.title = `BlogSpark | ${data.title}`;
+  document.title = `Code Cloner | ${data.title}`;
 }
 
 function renderProject(data) {
@@ -279,7 +279,7 @@ function renderProject(data) {
     <div class="read-body ql-editor" id="projDescBody"></div>
     ${codeSection}
   `;
-  document.title = `BlogSpark | ${data.name}`;
+  document.title = `Code Cloner | ${data.name}`;
 
   // Set description HTML safely
   const descEl = document.getElementById("projDescBody");
@@ -332,7 +332,7 @@ function renderResource(data) {
     <div class="read-body">${esc(data.description || "")}</div>
     ${data.tags ? `<div class="read-tags">${data.tags.split(",").map(t=>`<span class="badge">${esc(t.trim())}</span>`).join("")}</div>` : ""}
   `;
-  document.title = `BlogSpark | ${data.title}`;
+  document.title = `Code Cloner | ${data.title}`;
 }
 
 function renderError(msg) {
