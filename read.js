@@ -345,6 +345,14 @@ function renderError(msg) {
   `;
 }
 
+function makeSlug(text) {
+  return String(text || "").toLowerCase().trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 60);
+}
+
 async function load() {
   if (!id) { renderError("No article ID found in URL."); return; }
 
@@ -367,6 +375,14 @@ async function load() {
     // Show views as current + 1 (this visit counts)
     const currentViews = (data.views || 0) + 1;
     data._displayViews = currentViews;
+    // Update URL with readable slug
+    const titleField = type === "projects" ? data.name : data.title;
+    const slug = makeSlug(titleField);
+    if (slug && !params.get("slug")) {
+      const newUrl = `${location.pathname}?type=${type}&id=${id}&slug=${slug}`;
+      history.replaceState(null, "", newUrl);
+    }
+
     switch (type) {
       case "articles":  renderArticle(data);  break;
       case "tips":      renderTip(data);      break;
