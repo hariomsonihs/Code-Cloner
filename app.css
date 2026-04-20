@@ -153,6 +153,14 @@ a {
   box-shadow: 0 0 22px rgba(95, 142, 255, 0.45);
 }
 
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .brand strong {
   display: block;
   font-size: 1rem;
