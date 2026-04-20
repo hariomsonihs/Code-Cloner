@@ -6,7 +6,7 @@ import {
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js";
 import { app } from "./firebase-config.js";
 
-const VAPID_KEY = (window.__env || {}).vapidKey || "";
+const VAPID_KEY = "BKC5LpRQPKwiyl3HhNyim_Jo8U5-4vyUUKRpd6EpODTNfp0uf9Fe4tWFZkGy7zBWyUVX2YqJMfDR9Sp57h0QnZk";
 
 const NOTIF_COLLECTION = "notifications";
 
