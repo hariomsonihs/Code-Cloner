@@ -531,6 +531,13 @@ a {
   margin-top: 1rem;
 }
 
+@media (max-width: 760px) {
+  .cta-row .btn {
+    padding: .52rem .8rem;
+    font-size: .85rem;
+  }
+}
+
 .stats-row {
   margin-top: 1rem;
 }
