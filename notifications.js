@@ -205,15 +205,14 @@ export function initNotifications() {
 
 // ── Admin helper: naya content add hone par notification save karo ────────────
 export async function saveNotification({ title, category, type, docId }) {
-  const typeMap = { articles: "articles", tips: "tips", facts: "facts", projects: "projects", resources: "resources" };
-  const col = typeMap[type] || type;
-  const url = `read.html?type=${col}&id=${encodeURIComponent(docId)}`;
-  await addDoc(collection(db, NOTIF_COLLECTION), {
-    title,
-    category,
-    type: col,
-    url,
-    read: false,
-    createdAt: serverTimestamp(),
-  });
+  // Sirf API call karo — server side save + FCM push karega
+  try {
+    await fetch("https://code-cloner.vercel.app/api/send-notification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, category, type, docId }),
+    });
+  } catch (e) {
+    console.warn("Notification send failed:", e.message);
+  }
 }
