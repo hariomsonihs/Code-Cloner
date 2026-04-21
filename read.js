@@ -77,10 +77,10 @@ bookmarkBtn.addEventListener("click", () => {
 const APK_URL = "https://drive.google.com/uc?export=download&id=1ke4T0rsmXHIUNlYQmNymUshvRZb7_Lfp";
 shareBtn.addEventListener("click", async () => {
   const title = document.querySelector("#readCard h1")?.textContent || document.title;
-  const url = location.href;
-  const shareText = `${title}\n\n🔗 Read here: ${url}\n\n📱 Download Code Cloner App (Android):\n${APK_URL}`;
+  const cleanUrl = `${location.origin}${location.pathname}?type=${type}&id=${id}`;
+  const shareText = `${title}\n\n🔗 Read here: ${cleanUrl}\n\n📱 Download Code Cloner App:\n${APK_URL}`;
   if (navigator.share) {
-    try { await navigator.share({ title, text: shareText, url }); return; } catch {}
+    try { await navigator.share({ title, text: shareText, url: cleanUrl }); return; } catch {}
   }
   await navigator.clipboard.writeText(shareText);
   shareBtn.innerHTML = `<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6L9 17l-5-5"/></svg>Copied!`;
@@ -175,6 +175,10 @@ function plainToHtml(text) {
 
 function renderArticle(data) {
   const tags = data.tags ? data.tags.split(",").map(t => t.trim()).filter(Boolean) : [];
+  
+  // Update meta tags for SEO
+  updateMetaTags(data.title, data.description || data.content?.substring(0, 160) || "", data.imageUrl);
+  
   card.innerHTML = `
     <div class="badge-row">
       ${data.category ? `<span class="badge">${esc(data.category)}</span>` : ""}
@@ -190,12 +194,15 @@ function renderArticle(data) {
     <div class="read-body ql-editor" id="readBodyHtml"></div>
     ${tags.length ? `<div class="read-tags">${tags.map(t => `<span class="badge">${esc(t)}</span>`).join("")}</div>` : ""}
   `;
-  document.title = `Code Cloner | ${data.title}`;
+  document.title = `${data.title} | Code Cloner`;
   const bodyEl = document.getElementById("readBodyHtml");
   if (bodyEl) bodyEl.innerHTML = plainToHtml(data.content || data.description || "");
 }
 
 function renderTip(data) {
+  // Update meta tags for SEO
+  updateMetaTags(data.title, data.description || data.body?.substring(0, 160) || "", data.imageUrl);
+  
   card.innerHTML = `
     <div class="badge-row">
       ${data.category ? `<span class="badge">${esc(data.category)}</span>` : ""}
@@ -215,12 +222,15 @@ function renderTip(data) {
       </div>` : ""}
     ${data.tags ? `<div class="read-tags">${data.tags.split(",").map(t=>`<span class="badge">${esc(t.trim())}</span>`).join("")}</div>` : ""}
   `;
-  document.title = `Code Cloner | ${data.title}`;
+  document.title = `${data.title} | Code Cloner`;
   const tipEl = document.getElementById("tipBodyHtml");
   if (tipEl) tipEl.innerHTML = plainToHtml(data.body || "");
 }
 
 function renderFact(data) {
+  // Update meta tags for SEO
+  updateMetaTags(data.title, data.body?.substring(0, 160) || "", data.imageUrl);
+  
   card.innerHTML = `
     <div class="badge-row">
       ${data.category ? `<span class="badge">${esc(data.category)}</span>` : ""}
@@ -235,10 +245,13 @@ function renderFact(data) {
     </div>
     <div class="read-body">${esc(data.body || "")}</div>
   `;
-  document.title = `Code Cloner | ${data.title}`;
+  document.title = `${data.title} | Code Cloner`;
 }
 
 function renderProject(data) {
+  // Update meta tags for SEO
+  updateMetaTags(data.name, data.description?.substring(0, 160) || "", data.imageUrl);
+  
   // Support old single `code` field + new `codeFiles` array
   const files = (data.codeFiles && data.codeFiles.length)
     ? data.codeFiles
@@ -285,7 +298,7 @@ function renderProject(data) {
     <div class="read-body ql-editor" id="projDescBody"></div>
     ${codeSection}
   `;
-  document.title = `Code Cloner | ${data.name}`;
+  document.title = `${data.name} | Code Cloner`;
 
   // Set description HTML safely
   const descEl = document.getElementById("projDescBody");
@@ -324,6 +337,9 @@ function renderProject(data) {
 }
 
 function renderResource(data) {
+  // Update meta tags for SEO
+  updateMetaTags(data.title, data.description?.substring(0, 160) || "", data.imageUrl);
+  
   card.innerHTML = `
     <div class="badge-row">
       ${data.type ? `<span class="badge">${esc(data.type)}</span>` : ""}
@@ -339,7 +355,7 @@ function renderResource(data) {
     <div class="read-body">${esc(data.description || "")}</div>
     ${data.tags ? `<div class="read-tags">${data.tags.split(",").map(t=>`<span class="badge">${esc(t.trim())}</span>`).join("")}</div>` : ""}
   `;
-  document.title = `Code Cloner | ${data.title}`;
+  document.title = `${data.title} | Code Cloner`;
 }
 
 function renderError(msg) {
@@ -353,6 +369,53 @@ function renderError(msg) {
 }
 
 const AUTHOR_HTML = `<span>✍️ <a href="https://linkedin.com/in/hariomsonihs" target="_blank" rel="noopener" style="color:var(--brand-2);font-weight:600;text-decoration:none">Hariom Kumar</a></span>`;
+
+// Update meta tags dynamically for SEO
+function updateMetaTags(title, description, imageUrl) {
+  const fullTitle = `${title} | Code Cloner`;
+  const cleanDesc = description.replace(/<[^>]*>/g, "").substring(0, 160);
+  const fullUrl = `${location.origin}${location.pathname}${location.search}`;
+  const imgUrl = imageUrl || `${location.origin}/code_cloner_logo.jpeg`;
+  
+  // Update title
+  document.title = fullTitle;
+  
+  // Update or create meta tags
+  setMeta("description", cleanDesc);
+  setMeta("keywords", `${title}, programming, web development, coding, tutorial`);
+  
+  // Open Graph
+  setMeta("og:title", fullTitle, "property");
+  setMeta("og:description", cleanDesc, "property");
+  setMeta("og:url", fullUrl, "property");
+  setMeta("og:image", imgUrl, "property");
+  setMeta("og:type", "article", "property");
+  
+  // Twitter
+  setMeta("twitter:title", fullTitle, "property");
+  setMeta("twitter:description", cleanDesc, "property");
+  setMeta("twitter:image", imgUrl, "property");
+  setMeta("twitter:card", "summary_large_image", "property");
+  
+  // Canonical URL
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    document.head.appendChild(canonical);
+  }
+  canonical.href = fullUrl;
+}
+
+function setMeta(name, content, attr = "name") {
+  let meta = document.querySelector(`meta[${attr}="${name}"]`);
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.setAttribute(attr, name);
+    document.head.appendChild(meta);
+  }
+  meta.content = content;
+}
 
 function makeSlug(text) {
   return String(text || "").toLowerCase().trim()

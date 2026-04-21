@@ -1,0 +1,23 @@
+# Code Cloner - Robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://code-cloner.vercel.app/sitemap.xml
+
+# Disallow admin panel
+Disallow: /Code Cloner Admin/
+
+# Allow all content pages
+Allow: /index.html
+Allow: /articles.html
+Allow: /tips.html
+Allow: /facts.html
+Allow: /projects.html
+Allow: /resources.html
+Allow: /read.html
+Allow: /search.html
+Allow: /about.html
+
+# Crawl delay (optional)
+Crawl-delay: 1
