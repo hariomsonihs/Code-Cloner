@@ -748,13 +748,16 @@ a {
 .card-banner-img {
   background: #e8eef8;
   padding: 0;
+  height: 140px;
 }
 
 .card-banner-img img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8eef8 100%);
 }
 
 /* Per-type banner gradients */

@@ -64,9 +64,11 @@ function renderState(text) {
 }
 
 function banner(cls, icon, imageUrl) {
-  if (imageUrl) {
+  // Agar imageUrl hai aur empty string nahi hai, to image dikhaao
+  if (imageUrl && imageUrl.trim()) {
     return `<div class="card-banner card-banner-img"><img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.remove('card-banner-img');this.remove()"/></div>`;
   }
+  // Warna gradient banner with icon dikhaao
   return `<div class="card-banner ${cls}"><span class="card-banner-icon">${icon}</span><div class="card-banner-shape"></div><div class="card-banner-shape2"></div></div>`;
 }
 
@@ -74,7 +76,7 @@ function cardForArticles(item) {
   const tags = item.tags ? item.tags.split(",").map(t => `<span class="card-tag">${escapeHtml(t.trim())}</span>`).join("") : "";
   return `
     <a class="content-card" href="read.html?type=articles&id=${item.id}">
-      ${banner("banner-article", "📄")}
+      ${banner("banner-article", "📄", item.imageUrl)}
       <div class="card-top">
         <div class="badge-row">
           <span class="badge">${escapeHtml(item.category || "Article")}</span>
@@ -98,14 +100,15 @@ function cardForTips(item) {
   const tags = item.tags ? item.tags.split(",").map(t => `<span class="card-tag">${escapeHtml(t.trim())}</span>`).join("") : "";
   return `
     <a class="content-card" href="read.html?type=tips&id=${item.id}">
-      ${banner("banner-tip", "💡")}
+      ${banner("banner-tip", "💡", item.imageUrl)}
       <div class="card-top">
         <div class="badge-row">
           <span class="badge badge-green">Tip</span>
           ${item.category ? `<span class="badge">${escapeHtml(item.category)}</span>` : ""}
+          ${item.readTime ? `<span class="badge badge-muted">⏱ ${escapeHtml(item.readTime)}</span>` : ""}
         </div>
         <h3>${escapeHtml(item.title || "Tip")}</h3>
-        <p class="card-desc">${escapeHtml(preview(item.body || ""))}</p>
+        <p class="card-desc">${escapeHtml(preview(item.description || item.body || ""))}</p>
       </div>
       <div class="card-bottom">
         ${item.example ? `<div class="card-code-preview"><code>${escapeHtml(item.example.slice(0, 80))}${item.example.length > 80 ? "…" : ""}</code></div>` : ""}
@@ -125,7 +128,7 @@ function cardForFacts(item) {
     : "";
   return `
     <a class="content-card fact-card" href="read.html?type=facts&id=${item.id}">
-      ${banner("banner-fact", "🔍")}
+      ${banner("banner-fact", "🔍", item.imageUrl)}
       <div class="card-top">
         <div class="badge-row">
           <span class="badge badge-orange">Fact</span>${cat}
@@ -172,7 +175,7 @@ function cardForResources(item) {
   const tags = item.tags ? item.tags.split(",").map(t => `<span class="card-tag">${escapeHtml(t.trim())}</span>`).join("") : "";
   return `
     <a class="content-card" href="${item.url ? escapeHtml(item.url) : '#'}" ${item.url ? 'target="_blank" rel="noopener"' : ''}>
-      ${banner("banner-resource", "🔗")}
+      ${banner("banner-resource", "🔗", item.imageUrl)}
       <div class="card-top">
         <div class="badge-row">
           ${item.type ? `<span class="badge badge-pink">${escapeHtml(item.type)}</span>` : ""}

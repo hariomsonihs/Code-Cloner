@@ -37,7 +37,9 @@ function stripHtml(html) { return (html||"").replace(/<[^>]+>/g," ").replace(/\s
 function preview(text, len=150) { const p=stripHtml(text); return p.length>len?p.slice(0,len).trimEnd()+"…":p; }
 function renderState(el, text) { if(el) el.innerHTML=`<div class="state-box" style="grid-column:1/-1">${escapeHtml(text)}</div>`; }
 function banner(cls, icon, imageUrl) {
-  if (imageUrl) return `<div class="card-banner card-banner-img"><img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.remove('card-banner-img');this.remove()"/></div>`;
+  // Agar imageUrl hai aur empty string nahi hai, to image dikhaao
+  if (imageUrl && imageUrl.trim()) return `<div class="card-banner card-banner-img"><img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.remove('card-banner-img');this.remove()"/></div>`;
+  // Warna gradient banner with icon dikhaao
   return `<div class="card-banner ${cls}"><span class="card-banner-icon">${icon}</span><div class="card-banner-shape"></div><div class="card-banner-shape2"></div></div>`;
 }
 
@@ -147,7 +149,7 @@ function watchLatest(col, listId, lim, renderer, dotsId) {
 
 watchLatest("articles","latestArticles",3,(id,d) => `
   <a class="content-card" href="read.html?type=articles&id=${encodeURIComponent(id)}">
-    ${banner("banner-article","📄")}
+    ${banner("banner-article","📄",d.imageUrl)}
     <div class="card-top">
       <div class="badge-row"><span class="badge">${escapeHtml(d.category||"Article")}</span>${d.readTime?`<span class="badge badge-muted">⏱ ${escapeHtml(d.readTime)}</span>`:""}</div>
       <h3>${escapeHtml(d.title||"Untitled")}</h3>
@@ -156,20 +158,20 @@ watchLatest("articles","latestArticles",3,(id,d) => `
     <div class="card-bottom"><div class="card-actions"><span class="small-btn">Read more →</span></div></div>
   </a>`, "dotArticles");
 
-watchLatest("tips","latestTips",4,(id,d) => `
+watchLatest("tips","latestTips",3,(id,d) => `
   <a class="content-card" href="read.html?type=tips&id=${encodeURIComponent(id)}">
-    ${banner("banner-tip","💡")}
+    ${banner("banner-tip","💡",d.imageUrl)}
     <div class="card-top">
-      <div class="badge-row"><span class="badge badge-green">Tip</span>${d.category?`<span class="badge">${escapeHtml(d.category)}</span>`:""}</div>
+      <div class="badge-row"><span class="badge badge-green">Tip</span>${d.category?`<span class="badge">${escapeHtml(d.category)}</span>`:""}${d.readTime?`<span class="badge badge-muted">⏱ ${escapeHtml(d.readTime)}</span>`:""}</div>
       <h3>${escapeHtml(d.title||"Tip")}</h3>
-      <p class="card-desc">${escapeHtml(preview(d.body||""))}</p>
+      <p class="card-desc">${escapeHtml(preview(d.description||d.body||""))}</p>
     </div>
     <div class="card-bottom"><div class="card-actions"><span class="small-btn">Read more →</span></div></div>
   </a>`, "dotTips");
 
-watchLatest("facts","latestFacts",4,(id,d) => `
+watchLatest("facts","latestFacts",3,(id,d) => `
   <a class="content-card" href="read.html?type=facts&id=${encodeURIComponent(id)}">
-    ${banner("banner-fact","🔍")}
+    ${banner("banner-fact","🔍",d.imageUrl)}
     <div class="card-top">
       <div class="badge-row"><span class="badge badge-orange">Fact</span>${d.category?`<span class="badge">${escapeHtml(d.category)}</span>`:""}</div>
       <h3>${escapeHtml(d.title||"Fact")}</h3>
@@ -186,5 +188,5 @@ watchLatest("projects","latestProjects",3,(id,d) => `
       <h3>${escapeHtml(d.name||"Untitled Project")}</h3>
       <p class="card-desc">${escapeHtml(preview(d.description||""))}</p>
     </div>
-    <div class="card-bottom"><div class="card-actions"><span class="small-btn">View details →</span>${d.liveUrl?`<a class="small-btn small-btn-ghost" href="${escapeHtml(d.liveUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Live ↗</a>`:""}</div></div>
+    <div class="card-bottom"><div class="card-actions"><span class="small-btn">View details →</span></div></div>
   </a>`, "dotProjects");

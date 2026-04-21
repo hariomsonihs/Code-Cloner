@@ -1,23 +1,98 @@
-# Environment variables - KABHI PUSH MAT KARO
+# ========================================
+# SENSITIVE FILES - KABHI PUSH MAT KARO!
+# ========================================
+
+# Environment variables
 .env
 .env.local
 .env.production
+.env.development
+
+# Firebase config files (contain API keys)
 env-config.js
+firebase-config.js
 
-# Admin panel - push nahi karna
-web-admin/
+# Admin panel env files
+Code Cloner Admin/env-config.js
+Code Cloner Admin/api/env-config.js
 
-# Android secrets
+# API env files
+api/env-config.js
+
+# Service worker with keys
+firebase-messaging-sw.js
+
+# ========================================
+# BUILD & DEPENDENCIES
+# ========================================
+
+node_modules/
+package-lock.json
+yarn.lock
+
+# ========================================
+# ANDROID APP SECRETS
+# ========================================
+
 android/local.properties
 android/app/google-services.json
 android/keystore/
 *.jks
 *.keystore
+*.p12
+*.key
+*.mobileprovision
 
-# OS files
+# ========================================
+# OS & EDITOR FILES
+# ========================================
+
+# macOS
 .DS_Store
-Thumbs.db
+.AppleDouble
+.LSOverride
 
-# Editor
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Editor directories
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# ========================================
+# LOGS & TEMP FILES
+# ========================================
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.tmp
+*.temp
+
+# ========================================
+# FIREBASE
+# ========================================
+
+.firebase/
+.firebaserc
+firebase-debug.log
+
+# ========================================
+# MISC
+# ========================================
+
+.cache/
+dist/
+build/
+*.zip
+*.tar.gz
