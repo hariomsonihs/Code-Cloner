@@ -185,6 +185,7 @@ function renderHistory(items, total) {
   const typeIcon  = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗" };
   const typeColor = { articles:"rgba(95,142,255,.1)", tips:"rgba(60,200,167,.1)", facts:"rgba(255,178,72,.1)", projects:"rgba(139,92,246,.1)", resources:"rgba(6,182,212,.1)" };
   const textColor = { articles:"var(--brand-2)", tips:"#0d6e55", facts:"#7a4800", projects:"#4c1d95", resources:"#0e7490" };
+  const bannerMap = { articles:"banner-article", tips:"banner-tip", facts:"banner-fact", projects:"banner-project", resources:"banner-resource" };
 
   const label = typeLabel[activeFilter] || "All";
   document.querySelector(".history-head h2").innerHTML =
@@ -202,11 +203,22 @@ function renderHistory(items, total) {
     const date = item.viewedAt?.toDate
       ? item.viewedAt.toDate().toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" })
       : "";
+    
+    // Thumbnail support
+    const hasImage = item.imageUrl && item.imageUrl.trim();
+    const thumbnailHTML = hasImage
+      ? `<div class="h-card-banner card-banner-img"><img src="${escapeHtml(item.imageUrl)}" alt="" loading="lazy" onerror="this.style.display='none'"/></div>`
+      : `<div class="h-card-banner ${bannerMap[item.type] || 'banner-article'}">
+           <span class="card-banner-icon" style="font-size:1.8rem">${icon}</span>
+         </div>`;
+    
     return `<a class="h-card" href="read.html?type=${item.type}&id=${item.contentId}">
-      <span class="h-icon">${icon}</span>
-      <span class="h-badge" style="background:${bg};color:${col};border-color:${col}20">${escapeHtml(item.type)}</span>
-      <span class="h-title">${escapeHtml(item.title || "Untitled")}</span>
-      <span class="h-meta">📅 ${date}</span>
+      ${thumbnailHTML}
+      <div class="h-card-content">
+        <span class="h-badge" style="background:${bg};color:${col};border-color:${col}20">${escapeHtml(item.type)}</span>
+        <span class="h-title">${escapeHtml(item.title || "Untitled")}</span>
+        <span class="h-meta">📅 ${date}</span>
+      </div>
     </a>`;
   }).join("");
 }

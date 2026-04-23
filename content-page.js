@@ -29,19 +29,58 @@ const closeModalBtn = document.getElementById("closeModal");
 
 let allDocs = [];
 let activeCategory = "All";
+let resourcesData = {}; // Store resources data for modal
 
 const categoryChips = document.getElementById("categoryChips");
 
 function buildCategoryChips() {
   if (!categoryChips) return;
   const cats = ["All", ...new Set(allDocs.map(d => d.category).filter(Boolean))];
-  categoryChips.innerHTML = cats.map(c =>
-    `<button class="filter-chip${c === activeCategory ? " active" : ""}" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>`
-  ).join("");
-  categoryChips.querySelectorAll(".filter-chip").forEach(btn => {
-    btn.addEventListener("click", () => {
-      activeCategory = btn.dataset.cat;
-      buildCategoryChips();
+  
+  // Create dropdown structure
+  categoryChips.innerHTML = `
+    <div class="category-filter-wrap">
+      <button class="category-filter-btn" id="categoryFilterBtn">
+        <span id="selectedCategory">${escapeHtml(activeCategory)}</span>
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="category-dropdown" id="categoryDropdown">
+        ${cats.map(c => `<div class="category-dropdown-item${c === activeCategory ? " active" : ""}" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</div>`).join("")}
+      </div>
+    </div>
+  `;
+  
+  const filterBtn = document.getElementById("categoryFilterBtn");
+  const dropdown = document.getElementById("categoryDropdown");
+  const selectedCategorySpan = document.getElementById("selectedCategory");
+  
+  // Toggle dropdown
+  filterBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle("open");
+    filterBtn.classList.toggle("open");
+  });
+  
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".category-filter-wrap")) {
+      dropdown?.classList.remove("open");
+      filterBtn?.classList.remove("open");
+    }
+  });
+  
+  // Handle category selection
+  dropdown?.querySelectorAll(".category-dropdown-item").forEach(item => {
+    item.addEventListener("click", () => {
+      activeCategory = item.dataset.cat;
+      selectedCategorySpan.textContent = activeCategory;
+      dropdown.classList.remove("open");
+      filterBtn.classList.remove("open");
+      
+      // Update active state
+      dropdown.querySelectorAll(".category-dropdown-item").forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+      
       render();
     });
   });
@@ -122,26 +161,81 @@ function cardForTips(item) {
 }
 
 function cardForFacts(item) {
-  const cat = item.category ? `<span class="badge">${escapeHtml(item.category)}</span>` : "";
-  const src = item.source
-    ? `<span class="small-btn small-btn-ghost" data-src="${escapeHtml(item.source)}">Source ↗</span>`
-    : "";
+  // Category-based icons
+  const categoryIcons = {
+    "Science": "🔬",
+    "Technology": "💻",
+    "History": "🏛️",
+    "Nature": "🌿",
+    "Space": "🚀",
+    "Human Body": "🫀",
+    "Animals": "🐾",
+    "Other": "🔍"
+  };
+  
+  const icon = categoryIcons[item.category] || "🔍";
+  const categoryClass = item.category ? `fact-${item.category.toLowerCase().replace(/\s+/g, '-')}` : "fact-other";
+  
+  // Strip HTML for teaser
+  const teaser = preview(item.description || item.body || "", 80);
+  
+  // Full content for back side
+  const fullContent = item.body || item.description || "No content available.";
+  
+  // Thumbnail rendering
+  const hasImage = item.imageUrl && item.imageUrl.trim();
+  const headerContent = hasImage 
+    ? `<div class="fact-thumbnail-wrapper">
+         <img src="${escapeHtml(item.imageUrl)}" alt="" class="fact-thumbnail" loading="lazy"/>
+         <div class="fact-thumbnail-overlay">
+           <span class="fact-thumbnail-icon">${icon}</span>
+         </div>
+       </div>`
+    : `<span class="fact-icon-large">${icon}</span>
+       <div class="fact-particle"></div>
+       <div class="fact-particle"></div>
+       <div class="fact-particle"></div>`;
+  
   return `
-    <a class="content-card fact-card" href="read.html?type=facts&id=${item.id}">
-      ${banner("banner-fact", "🔍", item.imageUrl)}
-      <div class="card-top">
-        <div class="badge-row">
-          <span class="badge badge-orange">Fact</span>${cat}
+    <div class="content-card ${categoryClass}" onclick="flipFactCard(this, event)">
+      <div class="fact-card-inner">
+        <!-- Front Side -->
+        <div class="fact-card-front">
+          <div class="fact-front-header ${hasImage ? 'has-image' : ''}">
+            ${headerContent}
+          </div>
+          <div class="fact-front-body">
+            <span class="fact-category-badge">
+              <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              ${escapeHtml(item.category || "Fact")}
+            </span>
+            <h3 class="fact-title">${escapeHtml(item.title || "Interesting Fact")}</h3>
+            <p class="fact-teaser">${escapeHtml(teaser)}</p>
+            <div class="fact-flip-hint">
+              <svg viewBox="0 0 24 24" style="stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+              Click to reveal full fact
+            </div>
+          </div>
         </div>
-        <h3>${escapeHtml(item.title || "Fact")}</h3>
-        <p class="card-desc">${escapeHtml(preview(item.body || ""))}</p>
-      </div>
-      <div class="card-bottom">
-        <div class="card-actions">
-          <span class="small-btn">Read more →</span>${src}
+        
+        <!-- Back Side -->
+        <div class="fact-card-back">
+          <div class="fact-back-header">
+            <h3 class="fact-back-title">${escapeHtml(item.title || "Fact")}</h3>
+            <button class="fact-back-close" onclick="flipFactCard(this.closest('.content-card'), event)">×</button>
+          </div>
+          <div class="fact-back-content ql-editor">${fullContent}</div>
+          ${item.source ? `
+            <div class="fact-back-footer">
+              <a href="${escapeHtml(item.source)}" target="_blank" rel="noopener" class="fact-source-link" onclick="event.stopPropagation()">
+                <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                View Source
+              </a>
+            </div>
+          ` : ""}
         </div>
       </div>
-    </a>
+    </div>
   `;
 }
 
@@ -173,24 +267,73 @@ function cardForProjects(item) {
 
 function cardForResources(item) {
   const tags = item.tags ? item.tags.split(",").map(t => `<span class="card-tag">${escapeHtml(t.trim())}</span>`).join("") : "";
+  
+  // Store data for modal
+  resourcesData[item.id] = item;
+  
+  // Category-based icon mapping
+  const categoryIcons = {
+    "Tools": "🛠️",
+    "Library": "📚",
+    "Course": "🎓",
+    "Documentation": "📖",
+    "Tutorial": "🎬",
+    "API": "⚡",
+    "Design": "🎨",
+    "Other": "🔗"
+  };
+  
+  const icon = categoryIcons[item.category] || "🔗";
+  const categoryClass = item.category ? `resource-${item.category.toLowerCase()}` : "resource-other";
+  
+  // Type badge (Free/Paid/Freemium)
+  const typeBadge = item.type ? `<span class="resource-type-badge badge-${item.type.toLowerCase()}">${escapeHtml(item.type)}</span>` : "";
+  
+  // Thumbnail rendering
+  const hasImage = item.imageUrl && item.imageUrl.trim();
+  const bannerContent = hasImage
+    ? `<div class="resource-thumbnail-wrapper">
+         <img src="${escapeHtml(item.imageUrl)}" alt="" class="resource-thumbnail" loading="lazy"/>
+         <div class="resource-thumbnail-overlay">
+           <span class="resource-thumbnail-icon">${icon}</span>
+         </div>
+       </div>`
+    : `<span class="resource-icon">${icon}</span>`;
+  
+  // Stats (views, rating, etc.)
+  const stats = `
+    <div class="resource-stats">
+      ${item.views ? `<span class="resource-stat"><span class="resource-stat-icon">👁️</span>${item.views}</span>` : ""}
+      ${item.rating ? `<span class="resource-stat"><span class="resource-stat-icon">⭐</span>${item.rating}</span>` : ""}
+      ${item.category ? `<span class="resource-stat"><span class="resource-stat-icon">📂</span>${escapeHtml(item.category)}</span>` : ""}
+    </div>
+  `;
+  
   return `
-    <a class="content-card" href="${item.url ? escapeHtml(item.url) : '#'}" ${item.url ? 'target="_blank" rel="noopener"' : ''}>
-      ${banner("banner-resource", "🔗", item.imageUrl)}
+    <div class="content-card ${categoryClass}" onclick="openResourceModal('${item.id}')" style="cursor:pointer">
+      <div class="card-banner ${hasImage ? 'has-image' : ''}">
+        ${bannerContent}
+        ${typeBadge}
+      </div>
       <div class="card-top">
-        <div class="badge-row">
-          ${item.type ? `<span class="badge badge-pink">${escapeHtml(item.type)}</span>` : ""}
-          ${item.category ? `<span class="badge">${escapeHtml(item.category)}</span>` : ""}
-        </div>
         <h3>${escapeHtml(item.title || "Resource")}</h3>
-        <p class="card-desc">${escapeHtml(preview(item.description || ""))}</p>
+        <p class="card-desc">${escapeHtml(preview(item.description || item.body || ""))}</p>
+        ${(item.views || item.rating || item.category) ? stats : ""}
       </div>
       <div class="card-bottom">
         ${tags ? `<div class="card-tags">${tags}</div>` : ""}
-        <div class="card-actions">
-          <span class="small-btn">Open link ↗</span>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button class="resource-link-btn resource-info-btn" onclick="event.stopPropagation();openResourceModal('${item.id}')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            View Details
+          </button>
+          ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" class="resource-link-btn" onclick="event.stopPropagation()">
+            <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+            Visit Resource
+          </a>` : ""}
         </div>
       </div>
-    </a>
+    </div>
   `;
 }
 
@@ -324,3 +467,71 @@ btt.id = "backToTop"; btt.textContent = "↑"; btt.title = "Back to top";
 document.body.appendChild(btt);
 window.addEventListener("scroll", () => btt.classList.toggle("show", window.scrollY > 300));
 btt.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+// Flip card functionality for facts
+window.flipFactCard = function(card, event) {
+  event.preventDefault();
+  event.stopPropagation();
+  card.classList.toggle("flipped");
+};
+
+// Resource modal functions
+window.openResourceModal = function(id) {
+  const item = resourcesData[id];
+  if (!item) return;
+  
+  // Create modal dynamically
+  const existingModal = document.getElementById('resourceModalContainer');
+  if (existingModal) existingModal.remove();
+  
+  const tags = item.tags ? item.tags.split(",").map(t => `<span class="card-tag">${escapeHtml(t.trim())}</span>`).join("") : "";
+  const fullContent = item.body || item.description || "No detailed information available.";
+  
+  const modalHTML = `
+    <div class="resource-modal active" id="resourceModalContainer" onclick="closeResourceModal()">
+      <div class="resource-modal-content" onclick="event.stopPropagation()">
+        <div class="resource-modal-header">
+          <div>
+            <div class="resource-modal-badges">
+              ${item.type ? `<span class="badge badge-${item.type.toLowerCase()}">${escapeHtml(item.type)}</span>` : ""}
+              ${item.category ? `<span class="badge">${escapeHtml(item.category)}</span>` : ""}
+            </div>
+            <h2 class="resource-modal-title">${escapeHtml(item.title || "Resource")}</h2>
+          </div>
+          <button class="resource-modal-close" onclick="closeResourceModal()">
+            <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="resource-modal-body ql-editor">${fullContent}</div>
+        ${tags ? `<div class="resource-modal-tags">${tags}</div>` : ""}
+        ${item.url ? `<div class="resource-modal-footer">
+          <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" class="resource-modal-link">
+            <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+            Open Resource Link
+          </a>
+        </div>` : ""}
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeResourceModal = function() {
+  const modal = document.getElementById('resourceModalContainer');
+  if (modal) {
+    modal.classList.remove('active');
+    setTimeout(() => {
+      modal.remove();
+      document.body.style.overflow = '';
+    }, 300);
+  }
+};
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeResourceModal();
+  }
+});

@@ -117,11 +117,15 @@ async function loadRelated(category, currentId) {
     const iconMap = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗" };
     grid.innerHTML = items.map(d => {
       const data = d.data();
+      const hasImage = data.imageUrl && data.imageUrl.trim();
+      const bannerHTML = hasImage
+        ? `<div class="card-banner card-banner-img"><img src="${escapeHtml(data.imageUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.remove('card-banner-img');this.remove()"/></div>`
+        : `<div class="card-banner ${bannerMap[type] || 'banner-article'}">
+             <span class="card-banner-icon">${iconMap[type] || "📄"}</span>
+             <div class="card-banner-shape"></div>
+           </div>`;
       return `<a class="content-card" href="read.html?type=${type}&id=${d.id}">
-        <div class="card-banner ${bannerMap[type] || 'banner-article'}">
-          <span class="card-banner-icon">${iconMap[type] || "📄"}</span>
-          <div class="card-banner-shape"></div>
-        </div>
+        ${bannerHTML}
         <div class="card-top" style="padding:.75rem 1rem 0">
           <div class="badge-row"><span class="badge">${escapeHtml(data.category || "")}</span></div>
           <h3 style="font-size:.9rem;margin:0 0 .4rem;line-height:1.3">${escapeHtml(data[titleField] || data.title || "")}</h3>
@@ -147,6 +151,45 @@ async function loadRelated(category, currentId) {
 }
 
 function esc(t){return String(t??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");}
+
+// Fix code blocks for syntax highlighting
+function fixCodeBlocks(container) {
+  if (!container) return;
+  
+  // Find all <pre> tags that don't have <code> inside
+  container.querySelectorAll('pre').forEach(pre => {
+    // Skip if already has code tag
+    if (pre.querySelector('code')) return;
+    
+    // Get the text content
+    const text = pre.textContent || pre.innerText;
+    
+    // Detect language from content
+    let lang = 'javascript'; // default
+    if (text.includes('def ') || text.includes('import ') && text.includes('from ')) lang = 'python';
+    else if (text.includes('<?php')) lang = 'php';
+    else if (text.includes('<!DOCTYPE') || text.includes('<html')) lang = 'markup';
+    else if (text.includes('SELECT ') || text.includes('INSERT ')) lang = 'sql';
+    else if (text.includes('function') || text.includes('const ') || text.includes('let ')) lang = 'javascript';
+    else if (text.includes('.class') || text.includes('public class')) lang = 'java';
+    
+    // Create code element with proper class
+    const code = document.createElement('code');
+    code.className = `language-${lang}`;
+    code.textContent = text;
+    
+    // Replace pre content with code element
+    pre.innerHTML = '';
+    pre.appendChild(code);
+  });
+  
+  // Now apply Prism highlighting
+  if (window.Prism) {
+    container.querySelectorAll('pre code').forEach(block => {
+      Prism.highlightElement(block);
+    });
+  }
+}
 
 function plainToHtml(text) {
   if (!text) return "";
@@ -196,7 +239,11 @@ function renderArticle(data) {
   `;
   document.title = `${data.title} | Code Cloner`;
   const bodyEl = document.getElementById("readBodyHtml");
-  if (bodyEl) bodyEl.innerHTML = plainToHtml(data.content || data.description || "");
+  if (bodyEl) {
+    bodyEl.innerHTML = plainToHtml(data.content || data.description || "");
+    // Fix and highlight code blocks
+    setTimeout(() => fixCodeBlocks(bodyEl), 100);
+  }
 }
 
 function renderTip(data) {
@@ -224,12 +271,16 @@ function renderTip(data) {
   `;
   document.title = `${data.title} | Code Cloner`;
   const tipEl = document.getElementById("tipBodyHtml");
-  if (tipEl) tipEl.innerHTML = plainToHtml(data.body || "");
+  if (tipEl) {
+    tipEl.innerHTML = plainToHtml(data.body || "");
+    // Fix and highlight code blocks
+    setTimeout(() => fixCodeBlocks(tipEl), 100);
+  }
 }
 
 function renderFact(data) {
   // Update meta tags for SEO
-  updateMetaTags(data.title, data.body?.substring(0, 160) || "", data.imageUrl);
+  updateMetaTags(data.title, data.description || data.body?.substring(0, 160) || "", data.imageUrl);
   
   card.innerHTML = `
     <div class="badge-row">
@@ -243,9 +294,15 @@ function renderFact(data) {
       ${data.source ? `<span>🔗 <a href="${esc(data.source)}" target="_blank" rel="noopener" style="color:var(--brand-2)">Source</a></span>` : ""}
       ${AUTHOR_HTML}
     </div>
-    <div class="read-body">${esc(data.body || "")}</div>
+    <div class="read-body ql-editor" id="factBodyHtml"></div>
   `;
   document.title = `${data.title} | Code Cloner`;
+  const factEl = document.getElementById("factBodyHtml");
+  if (factEl) {
+    factEl.innerHTML = data.body || plainToHtml(data.description || "");
+    // Fix and highlight code blocks
+    setTimeout(() => fixCodeBlocks(factEl), 100);
+  }
 }
 
 function renderProject(data) {
@@ -302,7 +359,11 @@ function renderProject(data) {
 
   // Set description HTML safely
   const descEl = document.getElementById("projDescBody");
-  if (descEl) descEl.innerHTML = plainToHtml(data.description || "");
+  if (descEl) {
+    descEl.innerHTML = plainToHtml(data.description || "");
+    // Fix and highlight code blocks
+    setTimeout(() => fixCodeBlocks(descEl), 100);
+  }
 
   // Tab switching
   const tabsEl = document.getElementById("projTabs");
@@ -313,6 +374,32 @@ function renderProject(data) {
     tabsEl.querySelectorAll(".proj-tab").forEach(t => t.classList.toggle("active", t.dataset.idx === idx));
     card.querySelectorAll(".proj-panel").forEach(p => p.classList.toggle("active", p.dataset.idx === idx));
   });
+  
+  // Apply syntax highlighting to project code
+  setTimeout(() => {
+    if (window.Prism) {
+      card.querySelectorAll('.proj-pre code').forEach(block => {
+        // Detect language from filename
+        const panel = block.closest('.proj-panel');
+        const idx = panel?.dataset.idx;
+        const filename = files[idx]?.name || '';
+        let lang = 'javascript';
+        
+        if (filename.endsWith('.py')) lang = 'python';
+        else if (filename.endsWith('.java')) lang = 'java';
+        else if (filename.endsWith('.html')) lang = 'markup';
+        else if (filename.endsWith('.css')) lang = 'css';
+        else if (filename.endsWith('.json')) lang = 'json';
+        else if (filename.endsWith('.sql')) lang = 'sql';
+        else if (filename.endsWith('.sh') || filename.endsWith('.bash')) lang = 'bash';
+        else if (filename.endsWith('.jsx') || filename.endsWith('.tsx')) lang = 'jsx';
+        else if (filename.endsWith('.ts')) lang = 'typescript';
+        
+        block.className = `language-${lang}`;
+        Prism.highlightElement(block);
+      });
+    }
+  }, 100);
 
   // Copy buttons
   card.querySelectorAll(".proj-copy-btn").forEach(btn => {
@@ -352,10 +439,16 @@ function renderResource(data) {
       ${data.url ? `<a href="${esc(data.url)}" target="_blank" rel="noopener" style="color:var(--brand-2)">🔗 Open Resource</a>` : ""}
       ${AUTHOR_HTML}
     </div>
-    <div class="read-body">${esc(data.description || "")}</div>
+    <div class="read-body ql-editor" id="resourceBodyHtml"></div>
     ${data.tags ? `<div class="read-tags">${data.tags.split(",").map(t=>`<span class="badge">${esc(t.trim())}</span>`).join("")}</div>` : ""}
   `;
   document.title = `${data.title} | Code Cloner`;
+  const resourceEl = document.getElementById("resourceBodyHtml");
+  if (resourceEl) {
+    resourceEl.innerHTML = data.body || plainToHtml(data.description || "");
+    // Fix and highlight code blocks
+    setTimeout(() => fixCodeBlocks(resourceEl), 100);
+  }
 }
 
 function renderError(msg) {
@@ -439,7 +532,7 @@ async function load() {
       const hist = JSON.parse(localStorage.getItem(HKEY) || "[]");
       const titleField = type === "projects" ? (data.name || data.title || "Untitled") : (data.title || "Untitled");
       const existing = hist.findIndex(h => h.id === id && h.type === type);
-      const entry = { id, type, title: titleField, category: data.category || "", readAt: Date.now() };
+      const entry = { id, type, title: titleField, category: data.category || "", imageUrl: data.imageUrl || "", readAt: Date.now() };
       if (existing !== -1) hist.splice(existing, 1);
       hist.unshift(entry);
       localStorage.setItem(HKEY, JSON.stringify(hist.slice(0, 100)));
@@ -478,6 +571,7 @@ async function load() {
         await setDoc(doc(db, "users", user.uid, "history", id), {
           contentId: id, type, title: titleField || "",
           category: data.category || "",
+          imageUrl: data.imageUrl || "",
           viewedAt: new Date(),
         });
       } catch {}
