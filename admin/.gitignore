@@ -1,0 +1,5 @@
+# Local env - KABHI PUSH MAT KARO
+env-config.js
+!api/env-config.js
+.env
+.env.local
