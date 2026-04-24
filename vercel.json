@@ -2,6 +2,13 @@
   "rewrites": [
     { "source": "/env-config.js", "destination": "/api/env-config" }
   ],
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/admin/",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/api/env-config",
