@@ -221,25 +221,175 @@ function fixCodeBlocks(container) {
   });
 }
 
-// Image zoom modal
+// Image zoom modal with pinch-to-zoom support
 function openImageZoom(src, alt) {
   const overlay = document.createElement('div');
   overlay.className = 'image-zoom-overlay';
   overlay.innerHTML = `
+    <button class="image-zoom-close">✕</button>
     <div class="image-zoom-content">
-      <button class="image-zoom-close">✕</button>
       <img src="${src}" alt="${alt || ''}" />
+    </div>
+    <div class="image-zoom-controls">
+      <button class="image-zoom-btn" data-action="zoom-out">−</button>
+      <button class="image-zoom-btn" data-action="reset">⟲</button>
+      <button class="image-zoom-btn" data-action="zoom-in">+</button>
     </div>
   `;
   document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
   setTimeout(() => overlay.classList.add('active'), 10);
   
-  overlay.querySelector('.image-zoom-close').onclick = () => closeImageZoom(overlay);
-  overlay.onclick = (e) => { if (e.target === overlay) closeImageZoom(overlay); };
+  const img = overlay.querySelector('img');
+  const content = overlay.querySelector('.image-zoom-content');
+  const closeBtn = overlay.querySelector('.image-zoom-close');
+  const controls = overlay.querySelectorAll('.image-zoom-btn');
+  
+  let scale = 1;
+  let posX = 0;
+  let posY = 0;
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  
+  // Pinch to zoom variables
+  let initialDistance = 0;
+  let initialScale = 1;
+  
+  function updateTransform() {
+    img.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+  }
+  
+  function zoomIn() {
+    scale = Math.min(scale + 0.3, 5);
+    updateTransform();
+  }
+  
+  function zoomOut() {
+    scale = Math.max(scale - 0.3, 0.5);
+    if (scale === 1) { posX = 0; posY = 0; }
+    updateTransform();
+  }
+  
+  function resetZoom() {
+    scale = 1;
+    posX = 0;
+    posY = 0;
+    updateTransform();
+  }
+  
+  // Mouse wheel zoom
+  content.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (e.deltaY < 0) zoomIn();
+    else zoomOut();
+  }, { passive: false });
+  
+  // Double click to zoom
+  img.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    if (scale > 1) resetZoom();
+    else {
+      scale = 2;
+      updateTransform();
+    }
+  });
+  
+  // Mouse drag to pan
+  img.addEventListener('mousedown', (e) => {
+    if (scale > 1) {
+      isDragging = true;
+      startX = e.clientX - posX;
+      startY = e.clientY - posY;
+      img.classList.add('dragging');
+      e.preventDefault();
+    }
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      posX = e.clientX - startX;
+      posY = e.clientY - startY;
+      updateTransform();
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    img.classList.remove('dragging');
+  });
+  
+  // Touch pinch to zoom
+  function getDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  
+  img.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      initialDistance = getDistance(e.touches);
+      initialScale = scale;
+    } else if (e.touches.length === 1 && scale > 1) {
+      isDragging = true;
+      startX = e.touches[0].clientX - posX;
+      startY = e.touches[0].clientY - posY;
+    }
+  }, { passive: false });
+  
+  img.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const currentDistance = getDistance(e.touches);
+      const scaleChange = currentDistance / initialDistance;
+      scale = Math.min(Math.max(initialScale * scaleChange, 0.5), 5);
+      updateTransform();
+    } else if (e.touches.length === 1 && isDragging) {
+      e.preventDefault();
+      posX = e.touches[0].clientX - startX;
+      posY = e.touches[0].clientY - startY;
+      updateTransform();
+    }
+  }, { passive: false });
+  
+  img.addEventListener('touchend', () => {
+    isDragging = false;
+    if (scale < 1) resetZoom();
+  });
+  
+  // Control buttons
+  controls.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = btn.dataset.action;
+      if (action === 'zoom-in') zoomIn();
+      else if (action === 'zoom-out') zoomOut();
+      else if (action === 'reset') resetZoom();
+    });
+  });
+  
+  // Close button
+  closeBtn.onclick = () => closeImageZoom(overlay);
+  
+  // Close on overlay click (only if not zoomed)
+  overlay.onclick = (e) => { 
+    if (e.target === overlay && scale === 1) closeImageZoom(overlay); 
+  };
+  
+  // Close on ESC key
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      closeImageZoom(overlay);
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
 }
 
 function closeImageZoom(overlay) {
   overlay.classList.remove('active');
+  document.body.style.overflow = '';
   setTimeout(() => overlay.remove(), 300);
 }
 
