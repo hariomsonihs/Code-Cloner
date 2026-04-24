@@ -149,7 +149,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 const cfg = window.__env || {};
@@ -160,8 +160,40 @@ const auth = getAuth(app);
 const loginPage = document.getElementById("loginPage");
 const dashPage  = document.getElementById("dashPage");
 
-onAuthStateChanged(auth, user => {
+// Admin check function
+async function checkAdminRole(user) {
+  try {
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (!userDoc.exists()) {
+      console.log("User document not found");
+      return false;
+    }
+    const userData = userDoc.data();
+    console.log("isAdmin:", userData.isAdmin);
+    return userData.isAdmin === true;
+  } catch (error) {
+    console.error("Error checking admin:", error);
+    return false;
+  }
+}
+
+onAuthStateChanged(auth, async user => {
   if (user) {
+    console.log("User logged in:", user.email);
+    
+    // Check admin role
+    const isAdmin = await checkAdminRole(user);
+    
+    if (!isAdmin) {
+      console.log("Access denied - not admin");
+      document.getElementById("loginErr").innerHTML = `<div class="toast toast-error" style="margin-bottom:.8rem">⛔ Access Denied: You don't have admin privileges.</div>`;
+      await signOut(auth);
+      loginPage.style.display = "flex";
+      dashPage.style.display  = "none";
+      return;
+    }
+    
+    console.log("Access granted - is admin");
     loginPage.style.display = "none";
     dashPage.style.display  = "flex";
     document.getElementById("userEmail").textContent = user.email;
