@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Check Test</title>
+  <script src="/env-config.js"></script>
+</head>
+<body>
+  <h1>Admin Check Test</h1>
+  <div id="result"></div>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    
+    const app = initializeApp(window.__env || {});
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    
+    const result = document.getElementById("result");
+    
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        result.innerHTML = "<p>❌ Not logged in</p>";
+        return;
+      }
+      
+      result.innerHTML = `<p>✅ Logged in as: ${user.email}</p>`;
+      result.innerHTML += `<p>UID: ${user.uid}</p>`;
+      
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        
+        if (!userDoc.exists()) {
+          result.innerHTML += "<p>❌ User document NOT found in Firestore</p>";
+          result.innerHTML += "<p><strong>Result: NOT ADMIN (no document)</strong></p>";
+          return;
+        }
+        
+        const userData = userDoc.data();
+        result.innerHTML += "<p>✅ User document found</p>";
+        result.innerHTML += `<p>User data: <pre>${JSON.stringify(userData, null, 2)}</pre></p>`;
+        result.innerHTML += `<p>isAdmin field: ${userData.isAdmin}</p>`;
+        result.innerHTML += `<p>isAdmin === true: ${userData.isAdmin === true}</p>`;
+        
+        if (userData.isAdmin === true) {
+          result.innerHTML += "<p style='color:green'><strong>✅ Result: IS ADMIN</strong></p>";
+        } else {
+          result.innerHTML += "<p style='color:red'><strong>❌ Result: NOT ADMIN</strong></p>";
+        }
+        
+      } catch (error) {
+        result.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
