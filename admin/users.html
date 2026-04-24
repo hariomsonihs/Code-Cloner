@@ -235,7 +235,7 @@ function renderTable(users) {
             ${esc((u.name || u.email || "?")[0].toUpperCase())}
           </div>
           <div>
-            <div class="td-title">${esc(u.name || "—")}${disabledBadge}</div>
+            <div class="td-title">${esc(u.name || "—")}${disabledBadge}${u.isAdmin ? '<span class="badge badge-success" style="margin-left:.4rem;font-size:.7rem">⭐ Admin</span>' : ''}</div>
             <div class="td-muted">${esc(u.email || "")}</div>
           </div>
         </div>
@@ -246,6 +246,7 @@ function renderTable(users) {
       <td>
         <div style="display:flex;gap:.4rem;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="openUser('${u.uid}')">View</button>
+          <button class="btn ${u.isAdmin ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleAdmin('${u.uid}', ${u.isAdmin || false})">${u.isAdmin ? '❌ Remove Admin' : '✅ Make Admin'}</button>
           <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.uid}', '${esc(u.name || u.email)}')">Delete</button>
         </div>
       </td>
@@ -461,6 +462,27 @@ window.deleteUser = async function(uid, name) {
     document.getElementById("totalUsersCount").textContent = allUsers.length + " users";
     
     toast("User data deleted ✓");
+  } catch(e) { 
+    console.error(e);
+    toast("Error: " + (e.message || "Failed"), "error"); 
+  }
+};
+
+// Toggle Admin Role
+window.toggleAdmin = async function(uid, currentIsAdmin) {
+  const u = allUsers.find(x => x.uid === uid);
+  const name = u?.name || u?.email || "this user";
+  const action = currentIsAdmin ? "Remove admin access from" : "Grant admin access to";
+  
+  if (!confirm(`${action} ${name}?\n\n${currentIsAdmin ? '⚠️ User will lose admin panel access.' : '✅ User will be able to access admin panel.'}`)) return;
+  
+  try {
+    await updateDoc(doc(db, "users", uid), { isAdmin: !currentIsAdmin });
+    
+    if (u) u.isAdmin = !currentIsAdmin;
+    
+    renderTable(allUsers);
+    toast(`${currentIsAdmin ? 'Admin access removed' : 'Admin access granted'} ✓`);
   } catch(e) { 
     console.error(e);
     toast("Error: " + (e.message || "Failed"), "error"); 

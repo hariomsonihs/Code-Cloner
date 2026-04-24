@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
   getFirestore,
-  collection, addDoc, deleteDoc, updateDoc, doc,
+  collection, addDoc, deleteDoc, updateDoc, doc, getDoc,
   onSnapshot, query, orderBy, serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import {
@@ -27,8 +27,49 @@ const logoutBtn = document.getElementById("logoutBtn");
 
 let unsubscribers = []; // store onSnapshot unsubs
 
-onAuthStateChanged(auth, (user) => {
+// ── Admin Role Check ───────────────────────────────────────────
+async function checkAdminRole(user) {
+  try {
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (!userDoc.exists()) {
+      console.log("User document not found in Firestore");
+      return false;
+    }
+    const userData = userDoc.data();
+    console.log("User data:", userData);
+    console.log("isAdmin value:", userData.isAdmin);
+    return userData.isAdmin === true;
+  } catch (error) {
+    console.error("Error checking admin role:", error);
+    return false;
+  }
+}
+
+onAuthStateChanged(auth, async (user) => {
   if (user) {
+    console.log("User logged in:", user.email);
+    
+    // Show loading state
+    loginBtn.textContent = "Checking permissions...";
+    loginBtn.disabled = true;
+    
+    // Check if user is admin
+    const isAdmin = await checkAdminRole(user);
+    
+    console.log("Is admin?", isAdmin);
+    
+    if (!isAdmin) {
+      // Not an admin - show error and sign out
+      console.log("Access denied - not an admin");
+      loginError.innerHTML = `<div class="toast error" style="margin-bottom:.8rem">⛔ Access Denied: You don't have admin privileges.<br><small>Contact administrator to get access.</small></div>`;
+      await signOut(auth);
+      loginBtn.textContent = "Sign In";
+      loginBtn.disabled = false;
+      return;
+    }
+    
+    // User is admin - grant access
+    console.log("Access granted - user is admin");
     loginScreen.style.display = "none";
     adminPanel.style.display = "block";
     document.getElementById("adminEmail").textContent = user.email;
@@ -36,6 +77,8 @@ onAuthStateChanged(auth, (user) => {
   } else {
     loginScreen.style.display = "flex";
     adminPanel.style.display = "none";
+    loginBtn.textContent = "Sign In";
+    loginBtn.disabled = false;
     // unsubscribe all listeners on logout
     unsubscribers.forEach((u) => u());
     unsubscribers = [];
