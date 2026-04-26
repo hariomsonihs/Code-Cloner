@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Test - Learning System</title>
+  <script src="/env-config.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; }
+    h2 { color: #667eea; margin-top: 0; }
+    .status { padding: 10px; border-radius: 6px; margin: 10px 0; }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 5px;
+    }
+    button:hover { background: #5568d3; }
+    pre {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .loading { color: #666; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Firebase Learning System Test</h1>
+  
+  <div class="test-card">
+    <h2>1. Firebase Config</h2>
+    <div id="configStatus" class="loading">Checking...</div>
+    <pre id="configData"></pre>
+  </div>
+
+  <div class="test-card">
+    <h2>2. Authentication</h2>
+    <div id="authStatus" class="loading">Checking...</div>
+    <div id="authData"></div>
+  </div>
+
+  <div class="test-card">
+    <h2>3. Firestore Connection</h2>
+    <div id="firestoreStatus" class="loading">Checking...</div>
+    <button onclick="testRead()">Test Read</button>
+    <button onclick="testWrite()">Test Write</button>
+    <div id="firestoreData"></div>
+  </div>
+
+  <div class="test-card">
+    <h2>4. Learning Categories</h2>
+    <div id="categoriesStatus" class="loading">Checking...</div>
+    <button onclick="loadCategories()">Load Categories</button>
+    <button onclick="addTestCategory()">Add Test Category</button>
+    <div id="categoriesData"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+
+    // Test 1: Config
+    const config = window.__env || {};
+    const configEl = document.getElementById('configStatus');
+    const configDataEl = document.getElementById('configData');
+    
+    if (config.apiKey && config.projectId) {
+      configEl.className = 'status success';
+      configEl.textContent = '✅ Config loaded successfully!';
+      configDataEl.textContent = JSON.stringify({
+        projectId: config.projectId,
+        authDomain: config.authDomain,
+        hasApiKey: !!config.apiKey
+      }, null, 2);
+    } else {
+      configEl.className = 'status error';
+      configEl.textContent = '❌ Config not found! Check env-config.js';
+      configDataEl.textContent = 'Config is empty or missing';
+    }
+
+    // Initialize Firebase
+    let app, db, auth;
+    try {
+      app = initializeApp(config);
+      db = getFirestore(app);
+      auth = getAuth(app);
+      console.log('Firebase initialized');
+    } catch (error) {
+      configEl.className = 'status error';
+      configEl.textContent = '❌ Firebase initialization failed: ' + error.message;
+    }
+
+    // Test 2: Auth
+    const authEl = document.getElementById('authStatus');
+    const authDataEl = document.getElementById('authData');
+    
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        authEl.className = 'status success';
+        authEl.textContent = '✅ User logged in!';
+        authDataEl.innerHTML = `
+          <div class="status info">
+            <strong>Email:</strong> ${user.email}<br>
+            <strong>UID:</strong> ${user.uid}
+          </div>
+        `;
+      } else {
+        authEl.className = 'status error';
+        authEl.textContent = '❌ Not logged in!';
+        authDataEl.innerHTML = '<div class="status error">Please login to admin panel first</div>';
+      }
+    });
+
+    // Test 3: Firestore
+    window.testRead = async function() {
+      const statusEl = document.getElementById('firestoreStatus');
+      const dataEl = document.getElementById('firestoreData');
+      
+      statusEl.className = 'loading';
+      statusEl.textContent = 'Testing read...';
+      
+      try {
+        const snapshot = await getDocs(collection(db, 'articles'));
+        statusEl.className = 'status success';
+        statusEl.textContent = `✅ Read successful! Found ${snapshot.size} articles`;
+        dataEl.innerHTML = `<div class="status info">Firestore connection working!</div>`;
+      } catch (error) {
+        statusEl.className = 'status error';
+        statusEl.textContent = '❌ Read failed: ' + error.message;
+        dataEl.innerHTML = `<pre>${error.stack}</pre>`;
+      }
+    };
+
+    window.testWrite = async function() {
+      const statusEl = document.getElementById('firestoreStatus');
+      const dataEl = document.getElementById('firestoreData');
+      
+      if (!auth.currentUser) {
+        alert('Please login first!');
+        return;
+      }
+      
+      statusEl.className = 'loading';
+      statusEl.textContent = 'Testing write...';
+      
+      try {
+        await addDoc(collection(db, 'test_collection'), {
+          test: true,
+          timestamp: serverTimestamp()
+        });
+        statusEl.className = 'status success';
+        statusEl.textContent = '✅ Write successful!';
+        dataEl.innerHTML = `<div class="status success">Write permissions working!</div>`;
+      } catch (error) {
+        statusEl.className = 'status error';
+        statusEl.textContent = '❌ Write failed: ' + error.message;
+        dataEl.innerHTML = `<pre>${error.stack}</pre>`;
+      }
+    };
+
+    // Test 4: Learning Categories
+    window.loadCategories = async function() {
+      const statusEl = document.getElementById('categoriesStatus');
+      const dataEl = document.getElementById('categoriesData');
+      
+      statusEl.className = 'loading';
+      statusEl.textContent = 'Loading categories...';
+      
+      try {
+        const snapshot = await getDocs(collection(db, 'learning_categories'));
+        statusEl.className = 'status success';
+        statusEl.textContent = `✅ Found ${snapshot.size} categories`;
+        
+        if (snapshot.empty) {
+          dataEl.innerHTML = '<div class="status info">No categories yet. Click "Add Test Category" to create one.</div>';
+        } else {
+          const categories = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          dataEl.innerHTML = `<pre>${JSON.stringify(categories, null, 2)}</pre>`;
+        }
+      } catch (error) {
+        statusEl.className = 'status error';
+        statusEl.textContent = '❌ Failed: ' + error.message;
+        dataEl.innerHTML = `<pre>${error.stack}</pre>`;
+      }
+    };
+
+    window.addTestCategory = async function() {
+      const statusEl = document.getElementById('categoriesStatus');
+      const dataEl = document.getElementById('categoriesData');
+      
+      if (!auth.currentUser) {
+        alert('Please login first!');
+        return;
+      }
+      
+      statusEl.className = 'loading';
+      statusEl.textContent = 'Adding test category...';
+      
+      try {
+        const docRef = await addDoc(collection(db, 'learning_categories'), {
+          icon: '📚',
+          name: 'Test Category',
+          description: 'This is a test category created by the test page',
+          order: 0,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        
+        statusEl.className = 'status success';
+        statusEl.textContent = '✅ Test category added! ID: ' + docRef.id;
+        dataEl.innerHTML = `<div class="status success">Category created successfully! Now check the admin panel.</div>`;
+        
+        // Auto load categories
+        setTimeout(() => window.loadCategories(), 1000);
+      } catch (error) {
+        statusEl.className = 'status error';
+        statusEl.textContent = '❌ Failed: ' + error.message;
+        dataEl.innerHTML = `<pre>${error.stack}</pre>`;
+      }
+    };
+
+    // Auto-run tests
+    setTimeout(() => {
+      if (auth.currentUser) {
+        window.testRead();
+        window.loadCategories();
+      }
+    }, 1000);
+  </script>
+</body>
+</html>

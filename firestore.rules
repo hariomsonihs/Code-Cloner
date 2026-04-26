@@ -107,6 +107,28 @@ service cloud.firestore {
       allow write, delete: if isAdmin();
     }
     
+    // ── Learning System - Public read, Admin write ──
+    match /learning_categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      match /courses/{courseId} {
+        allow read: if true;
+        allow write: if isAdmin();
+        
+        match /topics/{topicId} {
+          allow read: if true;
+          allow write: if isAdmin();
+          
+          match /exercises/{exerciseId} {
+            allow read: if true;
+            allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']);
+            allow write: if isAdmin();
+          }
+        }
+      }
+    }
+    
     // ── Users collection ──
     match /users/{userId} {
       allow read: if request.auth != null;

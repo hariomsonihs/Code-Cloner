@@ -1,0 +1,101 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exercise - Code Cloner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="learning.css">
+  <script src="env-config.js"></script>
+</head>
+<body data-page="exercise">
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+  <div class="bg-orb orb-c"></div>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="side-drawer" id="sideDrawer">
+    <div class="drawer-top">
+      <div class="brand"><img src="/code_cloner_logo.jpeg" alt="Logo" class="brand-logo"><div><strong>Code Cloner</strong><small>Learning Hub</small></div></div>
+      <button class="icon-btn" id="closeDrawer" aria-label="Close menu"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="drawer-section-label">Navigation</div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Home</a>
+      <a href="articles.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Articles</a>
+      <a href="learning.html" class="nav-link active"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Learning</a>
+      <a href="search.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search</a>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <a class="brand" href="index.html"><img src="/code_cloner_logo.jpeg" alt="Logo" class="brand-logo"><div><strong>Code Cloner</strong><small>Learning Hub</small></div></a>
+    <nav class="desktop-nav">
+      <a href="index.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Home</a>
+      <a href="articles.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Articles</a>
+      <a href="learning.html" class="nav-link active"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Learning</a>
+      <a href="search.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search</a>
+    </nav>
+    <button class="icon-btn menu-btn" id="openDrawer" aria-label="Open menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </header>
+
+  <main class="app-shell learning-shell">
+    <section class="lrn-card lrn-section" style="padding-bottom:0.78rem;">
+      <div class="breadcrumb">
+        <a href="learning.html">Learning Hub</a>
+        <span>/</span>
+        <a href="#" id="breadCategory">Category</a>
+        <span>/</span>
+        <a href="#" id="breadCourse">Course</a>
+        <span>/</span>
+        <a href="#" id="breadTopic">Topic</a>
+        <span>/</span>
+        <span id="exerciseName">Exercise</span>
+      </div>
+      <div class="lrn-section-head" style="margin-bottom:0;">
+        <h1 class="lrn-section-title" style="font-size:1.22rem;">Practice Exercise</h1>
+        <button class="toggle-sidebar" id="toggleSidebar">Open exercise list</button>
+      </div>
+    </section>
+
+    <div class="exercise-layout">
+      <aside class="exercise-sidebar" id="exerciseSidebar">
+        <div class="sidebar-header">
+          <h3>Exercise List</h3>
+          <button class="close-sidebar" id="closeSidebar" aria-label="Close list">x</button>
+        </div>
+        <div class="exercises-nav" id="exercisesNav">
+          <div class="loading">Loading...</div>
+        </div>
+      </aside>
+
+      <section class="exercise-main">
+        <article class="exercise-content" id="exerciseContent">
+          <div class="loading">Loading exercise...</div>
+        </article>
+
+        <div class="exercise-actions">
+          <button class="btn-action" id="prevExercise">Previous</button>
+          <button class="btn-action btn-complete" id="markComplete">Mark Complete</button>
+          <button class="btn-action" id="nextExercise">Next</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="exercise-nav-overlay" id="exerciseNavOverlay"></div>
+
+  <nav class="bottom-nav">
+    <a href="index.html"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg><span>Home</span></a>
+    <a href="articles.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8 9h8M8 12h8M8 15h5"/></svg><span>Articles</span></a>
+    <a href="learning.html" class="active"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Learning</span></a>
+    <a href="projects.html"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4zM9 7V5h6v2"/></svg><span>Projects</span></a>
+    <a href="profile.html"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></a>
+  </nav>
+
+  <script type="module" src="exercise.js"></script>
+</body>
+</html>
