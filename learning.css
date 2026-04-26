@@ -131,7 +131,7 @@
 .learning-stats {
   margin-top: 0.95rem;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.55rem;
 }
 
@@ -554,6 +554,10 @@
   margin-bottom: 0.78rem;
   line-height: 1.65;
   color: #2b446e;
+  min-width: 0;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 [data-page="exercise"] .exercise-content h1 {
@@ -577,20 +581,90 @@
 
 [data-page="exercise"] .exercise-content pre,
 [data-page="exercise"] .exercise-content code {
-  font-family: "Roboto Mono", monospace;
+  font-family: "Fira Code", "Roboto Mono", monospace;
 }
 
 [data-page="exercise"] .exercise-content pre {
-  background: #f3f8ff;
-  border: 1px solid rgba(76, 111, 166, 0.22);
-  border-radius: 12px;
-  padding: 0.68rem 0.72rem;
+  background: #1e1e1e;
+  border: 1px solid #3e4451;
+  border-radius: 14px;
+  padding: 0;
   overflow-x: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  color: #d4d4d4;
+  position: relative;
+}
+
+[data-page="exercise"] .exercise-content pre code {
+  display: block;
+  padding: 1.05rem;
+  background: transparent;
+  color: #d4d4d4;
+  line-height: 1.7;
+  font-size: 0.9rem;
+}
+
+[data-page="exercise"] .exercise-content pre.ql-syntax {
+  color: #d4d4d4;
+  white-space: pre;
+}
+
+[data-page="exercise"] .exercise-content :not(pre) > code {
+  background: rgba(221, 235, 255, 0.5);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  color: #1a355f;
+  font-size: 0.9em;
 }
 
 [data-page="exercise"] .exercise-content img {
+  max-width: 100% !important;
+  width: auto !important;
+  height: auto !important;
   border-radius: 12px;
   border: 1px solid rgba(76, 111, 166, 0.2);
+}
+
+[data-page="exercise"] .exercise-content table,
+[data-page="exercise"] .exercise-content iframe,
+[data-page="exercise"] .exercise-content video,
+[data-page="exercise"] .exercise-content canvas {
+  max-width: 100% !important;
+}
+
+[data-page="exercise"] .exercise-content table {
+  display: block;
+  width: 100% !important;
+  overflow-x: auto;
+}
+
+[data-page="exercise"] .exercise-content .exercise-body.ql-editor {
+  padding: 0;
+  border: 0;
+}
+
+[data-page="exercise"] .exercise-content .exercise-code-wrap {
+  position: relative;
+}
+
+[data-page="exercise"] .exercise-content .exercise-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  border: 1px solid rgba(95, 131, 255, 0.4);
+  background: rgba(255, 255, 255, 0.95);
+  color: #214070;
+  border-radius: 8px;
+  padding: 0.34rem 0.62rem;
+  font-size: 0.73rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+[data-page="exercise"] .exercise-content .exercise-copy-btn:hover {
+  background: rgba(95, 131, 255, 0.18);
+  border-color: rgba(95, 131, 255, 0.55);
 }
 
 [data-page="exercise"] .exercise-actions {
@@ -671,14 +745,14 @@
   [data-page="exercise"] .exercise-sidebar {
     position: fixed;
     left: 0;
-    top: 0;
-    bottom: 0;
+    top: 4.4rem;
+    bottom: 0.75rem;
     width: min(86vw, 320px);
     max-height: none;
-    border-radius: 0;
+    border-radius: 0 16px 16px 0;
     transform: translateX(-105%);
     transition: transform 0.25s ease;
-    z-index: 52;
+    z-index: 1200;
   }
 
   [data-page="exercise"] .exercise-sidebar.active {
@@ -701,7 +775,7 @@
     position: fixed;
     inset: 0;
     background: rgba(15, 28, 49, 0.4);
-    z-index: 51;
+    z-index: 1190;
     opacity: 0;
     visibility: hidden;
     transition: 0.2s ease;
@@ -739,5 +813,11 @@
 
   [data-page="exercise"] .exercise-actions {
     grid-template-columns: 1fr;
+  }
+
+  [data-page="exercise"] .exercise-sidebar {
+    top: 3.9rem;
+    bottom: 5.4rem;
+    width: min(92vw, 340px);
   }
 }

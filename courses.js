@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const firebaseConfig = window.__env || {};
 const app = initializeApp(firebaseConfig);
@@ -18,6 +18,14 @@ const courseColors = [
   { start: '#a8edea', end: '#fed6e3' },
   { start: '#ff9a9e', end: '#fecfef' }
 ];
+
+function sortDocsByOrder(docs) {
+  return [...docs].sort((a, b) => {
+    const orderA = Number(a.data()?.order ?? 0);
+    const orderB = Number(b.data()?.order ?? 0);
+    return orderA - orderB;
+  });
+}
 
 async function loadCategory() {
   if (!categoryId) {
@@ -38,7 +46,6 @@ async function loadCategory() {
     document.getElementById('categoryDesc').textContent = cat.description || '';
     document.getElementById('categoryIcon').textContent = cat.icon || '📚';
     document.title = `${cat.name} - Code Cloner`;
-
   } catch (error) {
     console.error('Error loading category:', error);
   }
@@ -46,15 +53,15 @@ async function loadCategory() {
 
 async function loadCourses() {
   const grid = document.getElementById('coursesGrid');
-  
+
   try {
-    const q = query(collection(db, `learning_categories/${categoryId}/courses`), orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
-    
-    if (snapshot.empty) {
+    const snapshot = await getDocs(collection(db, `learning_categories/${categoryId}/courses`));
+    const courseDocs = sortDocsByOrder(snapshot.docs);
+
+    if (!courseDocs.length) {
       grid.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">📖</div>
+          <div class="empty-icon">📘</div>
           <h3>No courses yet</h3>
           <p>Courses will be added soon. Check back later!</p>
         </div>
@@ -63,20 +70,26 @@ async function loadCourses() {
     }
 
     grid.innerHTML = '';
+    const exerciseCounts = await Promise.all(
+      courseDocs.map((courseDoc) => countCourseExercises(categoryId, courseDoc.id))
+    );
 
-    snapshot.docs.forEach((courseDoc, index) => {
+    courseDocs.forEach((courseDoc, index) => {
       const course = courseDoc.data();
       const colors = courseColors[index % courseColors.length];
-      
-      const levelClass = course.level === 'Beginner' ? 'level-beginner' : 
-                        course.level === 'Intermediate' ? 'level-intermediate' : 'level-advanced';
-      
+      const exerciseCount = exerciseCounts[index];
+      const levelClass = course.level === 'Beginner'
+        ? 'level-beginner'
+        : course.level === 'Intermediate'
+          ? 'level-intermediate'
+          : 'level-advanced';
+
       const card = document.createElement('a');
-      card.href = `topics.html?category=${categoryId}&course=${courseDoc.id}`;
+      card.href = `exercises.html?category=${categoryId}&course=${courseDoc.id}`;
       card.className = 'course-card';
       card.innerHTML = `
         <div class="course-banner" style="background: linear-gradient(135deg, ${colors.start} 0%, ${colors.end} 100%)">
-          ${course.icon || '📖'}
+          ${course.icon || '📘'}
         </div>
         <div class="course-body">
           <h3 class="course-name">${course.name}</h3>
@@ -84,13 +97,12 @@ async function loadCourses() {
           <div class="course-meta">
             <span class="level-badge ${levelClass}">${course.level || 'Beginner'}</span>
             <span class="meta-badge">⏱️ ${course.duration || 0}h</span>
-            <span class="meta-badge">📝 ${course.topicsCount || 0} topics</span>
+            <span class="meta-badge">📝 ${exerciseCount} exercises</span>
           </div>
         </div>
       `;
       grid.appendChild(card);
     });
-
   } catch (error) {
     console.error('Error loading courses:', error);
     grid.innerHTML = `
@@ -103,7 +115,34 @@ async function loadCourses() {
   }
 }
 
-// Mobile menu
+async function countCourseExercises(category, course) {
+  try {
+    const directExercisesSnap = await getDocs(
+      collection(db, `learning_categories/${category}/courses/${course}/exercises`)
+    );
+
+    if (directExercisesSnap.size > 0) {
+      return directExercisesSnap.size;
+    }
+
+    const topicsSnap = await getDocs(
+      collection(db, `learning_categories/${category}/courses/${course}/topics`)
+    );
+
+    let legacyCount = 0;
+    for (const topicDoc of topicsSnap.docs) {
+      const topicExercisesSnap = await getDocs(
+        collection(db, `learning_categories/${category}/courses/${course}/topics/${topicDoc.id}/exercises`)
+      );
+      legacyCount += topicExercisesSnap.size;
+    }
+    return legacyCount;
+  } catch (error) {
+    console.error('Error counting course exercises:', error);
+    return 0;
+  }
+}
+
 const openDrawer = document.getElementById('openDrawer');
 const closeDrawer = document.getElementById('closeDrawer');
 const drawer = document.getElementById('sideDrawer');

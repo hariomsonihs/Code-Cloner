@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exercise - Code Cloner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@300;400;600;700&family=Roboto+Mono:wght@400;500;700&family=Dancing+Script:wght@400;700&family=Pacifico&family=Caveat:wght@400;700&family=Bebas+Neue&family=Raleway:wght@300;400;600;700&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <script src="env-config.js"></script>
+  <style>
+    .read-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1.5rem 4rem;
+    }
+    .read-card {
+      background: white;
+      border-radius: 20px;
+      padding: 3rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .read-header {
+      margin-bottom: 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .read-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #1a1a1a;
+      line-height: 1.2;
+    }
+    .read-meta {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .read-content {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: #333;
+    }
+    .read-content h1,
+    .read-content h2,
+    .read-content h3 {
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+    .read-content h1 { font-size: 2rem; }
+    .read-content h2 { font-size: 1.6rem; }
+    .read-content h3 { font-size: 1.3rem; }
+    .read-content p {
+      margin-bottom: 1.2rem;
+    }
+    .read-content {
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .read-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      margin: 1.5rem 0;
+      display: block;
+    }
+    .read-content table,
+    .read-content iframe,
+    .read-content video {
+      max-width: 100% !important;
+    }
+    .read-content table {
+      display: block;
+      overflow-x: auto;
+      width: 100% !important;
+    }
+    .read-content pre {
+      background: #f5f7fa;
+      padding: 1.5rem;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      border-left: 4px solid #667eea;
+    }
+    .read-content code {
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+    .read-content ul,
+    .read-content ol {
+      margin: 1rem 0 1rem 2rem;
+    }
+    .read-content li {
+      margin-bottom: 0.5rem;
+    }
+    .read-content blockquote {
+      border-left: 4px solid #667eea;
+      padding-left: 1.5rem;
+      margin: 1.5rem 0;
+      color: #666;
+      font-style: italic;
+    }
+    .read-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 2px solid #f0f0f0;
+    }
+    .btn-action {
+      flex: 1;
+      padding: 1rem;
+      border-radius: 12px;
+      border: 2px solid #667eea;
+      background: white;
+      color: #667eea;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      text-align: center;
+    }
+    .btn-action:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+    }
+    .btn-action:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    @media (max-width: 768px) {
+      .read-card {
+        padding: 2rem 1.5rem;
+      }
+      .read-title {
+        font-size: 2rem;
+      }
+      .read-content {
+        font-size: 1rem;
+      }
+      .read-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body data-page="read">
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="side-drawer" id="sideDrawer">
+    <div class="drawer-top">
+      <div class="brand"><img src="/code_cloner_logo.jpeg" alt="Logo" class="brand-logo"/><div><strong>Code Cloner</strong><small>Learning Hub</small></div></div>
+      <button class="icon-btn" id="closeDrawer">
+        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="drawer-section-label">Navigation</div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Home</a>
+      <a href="articles.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Articles</a>
+      <a href="learning.html" class="nav-link" style="background:rgba(102,126,234,0.1);color:var(--brand-2);font-weight:600"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Learning</a>
+      <a href="search.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search</a>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <a class="brand" href="index.html"><img src="/code_cloner_logo.jpeg" alt="Logo" class="brand-logo"/><div><strong>Code Cloner</strong><small>Learning Hub</small></div></a>
+    <nav class="desktop-nav">
+      <a href="index.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Home</a>
+      <a href="articles.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Articles</a>
+      <a href="learning.html" class="nav-link" style="color:var(--brand-2);font-weight:600"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Learning</a>
+      <a href="search.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search</a>
+    </nav>
+    <button class="icon-btn menu-btn" id="openDrawer">
+      <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+    </button>
+  </header>
+
+  <div class="read-container">
+    <div class="read-card">
+      <div class="read-header">
+        <h1 class="read-title" id="exerciseTitle">Loading...</h1>
+        <div class="read-meta">
+          <span>👁️ <span id="viewCount">0</span> views</span>
+        </div>
+      </div>
+      <div class="read-content ql-editor" id="exerciseContent">
+        <p>Loading content...</p>
+      </div>
+      <div class="read-actions">
+        <button class="btn-action" id="prevBtn">← Previous</button>
+        <button class="btn-action" id="nextBtn">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z" /></svg><span>Home</span></a>
+    <a href="articles.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8 9h8M8 12h8M8 15h5" /></svg><span>Articles</span></a>
+    <a href="learning.html" style="color:var(--brand-2)"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Learning</span></a>
+    <a href="projects.html"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4zM9 7V5h6v2" /></svg><span>Projects</span></a>
+    <a href="profile.html"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></a>
+  </nav>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, increment, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    const firebaseConfig = window.__env || {};
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const categoryId = urlParams.get('category');
+    const courseId = urlParams.get('course');
+    const exerciseId = urlParams.get('id');
+
+    let allExercises = [];
+    let currentIndex = 0;
+
+    async function loadExercise() {
+      if (!categoryId || !courseId || !exerciseId) {
+        window.location.href = 'learning.html';
+        return;
+      }
+
+      try {
+        const exerciseDoc = await getDoc(doc(db, `learning_categories/${categoryId}/courses/${courseId}/exercises`, exerciseId));
+        
+        if (!exerciseDoc.exists()) {
+          document.getElementById('exerciseContent').innerHTML = '<p>Exercise not found!</p>';
+          return;
+        }
+
+        const exercise = exerciseDoc.data();
+        document.getElementById('exerciseTitle').textContent = exercise.title;
+        document.getElementById('viewCount').textContent = exercise.views || 0;
+        document.getElementById('exerciseContent').innerHTML = exercise.content || '<p>No content available</p>';
+        document.title = `${exercise.title} - Code Cloner`;
+
+        await updateDoc(doc(db, `learning_categories/${categoryId}/courses/${courseId}/exercises`, exerciseId), {
+          views: increment(1)
+        });
+
+        loadAllExercises();
+
+      } catch (error) {
+        console.error('Error loading exercise:', error);
+        document.getElementById('exerciseContent').innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    }
+
+    async function loadAllExercises() {
+      try {
+        const q = query(collection(db, `learning_categories/${categoryId}/courses/${courseId}/exercises`), orderBy('order', 'asc'));
+        const snapshot = await getDocs(q);
+        
+        allExercises = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        currentIndex = allExercises.findIndex(ex => ex.id === exerciseId);
+
+        document.getElementById('prevBtn').disabled = currentIndex === 0;
+        document.getElementById('nextBtn').disabled = currentIndex === allExercises.length - 1;
+
+      } catch (error) {
+        console.error('Error loading exercises list:', error);
+      }
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (currentIndex > 0) {
+        const prevExercise = allExercises[currentIndex - 1];
+        window.location.href = `read-exercise.html?category=${categoryId}&course=${courseId}&id=${prevExercise.id}`;
+      }
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      if (currentIndex < allExercises.length - 1) {
+        const nextExercise = allExercises[currentIndex + 1];
+        window.location.href = `read-exercise.html?category=${categoryId}&course=${courseId}&id=${nextExercise.id}`;
+      }
+    });
+
+    const openDrawer = document.getElementById('openDrawer');
+    const closeDrawer = document.getElementById('closeDrawer');
+    const drawer = document.getElementById('sideDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+
+    if (openDrawer) {
+      openDrawer.addEventListener('click', () => {
+        drawer.classList.add('open');
+        overlay.classList.add('show');
+      });
+    }
+
+    if (closeDrawer) {
+      closeDrawer.addEventListener('click', () => {
+        drawer.classList.remove('open');
+        overlay.classList.remove('show');
+      });
+    }
+
+    if (overlay) {
+      overlay.addEventListener('click', () => {
+        drawer.classList.remove('open');
+        overlay.classList.remove('show');
+      });
+    }
+
+    loadExercise();
+  </script>
+</body>
+</html>

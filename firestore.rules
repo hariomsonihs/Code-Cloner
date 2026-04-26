@@ -115,7 +115,15 @@ service cloud.firestore {
       match /courses/{courseId} {
         allow read: if true;
         allow write: if isAdmin();
+
+        // Direct exercises under course (new structure)
+        match /exercises/{exerciseId} {
+          allow read: if true;
+          allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']);
+          allow write: if isAdmin();
+        }
         
+        // Legacy topic-based structure (kept for backward compatibility)
         match /topics/{topicId} {
           allow read: if true;
           allow write: if isAdmin();

@@ -6,14 +6,17 @@
   <title>Learning Exercises - Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@300;400;600;700&family=Roboto+Mono:wght@400;500;700&family=Dancing+Script:wght@400;700&family=Pacifico&family=Caveat:wght@400;700&family=Bebas+Neue&family=Raleway:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
   <link rel="stylesheet" href="admin.css">
   <script src="/env-config.js"></script>
   <style>
-    .selector-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.8rem; }
+    .selector-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.8rem; }
     .lms-table table { min-width: 820px; }
-    #editor { min-height: 340px; }
+    #editor { min-height: 340px; border-radius: 12px; overflow: hidden; }
+    #editor .ql-editor { min-height: 260px; }
+    .editor-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-bottom:.5rem; }
+    .editor-head label { margin-bottom: 0; }
     @media (max-width: 980px){ .selector-grid { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -39,7 +42,6 @@
     <div class="sidebar-section">Learning System</div>
     <a href="learning-categories.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Categories</a>
     <a href="learning-courses.html" class="nav-item"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Courses</a>
-    <a href="learning-topics.html" class="nav-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>Topics</a>
     <a href="learning-exercises.html" class="nav-item active"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Exercises</a>
 
     <div class="sidebar-section">Users</div>
@@ -70,7 +72,7 @@
       <div class="card" style="margin-bottom:1rem">
         <div class="card-head">
           <h2>Filter</h2>
-          <span class="badge badge-blue">Pick Category, Course, Topic</span>
+          <span class="badge badge-blue">Pick Category and Course</span>
         </div>
         <div class="selector-grid">
           <div class="field">
@@ -83,12 +85,6 @@
             <label for="courseFilter">Course</label>
             <select id="courseFilter" class="select" disabled>
               <option value="">Select category first</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="topicFilter">Topic</label>
-            <select id="topicFilter" class="select" disabled>
-              <option value="">Select course first</option>
             </select>
           </div>
         </div>
@@ -111,7 +107,7 @@
               </tr>
             </thead>
             <tbody id="tableBody">
-              <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Select a topic</td></tr>
+              <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Select a course</td></tr>
             </tbody>
           </table>
         </div>
@@ -133,7 +129,10 @@
             <input type="text" id="title" class="input" placeholder="HTML Tags Basics" required>
           </div>
           <div class="field full">
-            <label for="editor">Content</label>
+            <div class="editor-head">
+              <label for="editor">Content</label>
+              <button type="button" class="btn btn-soft btn-sm" id="insertMediaBtn">Insert from Media</button>
+            </div>
             <div id="editor"></div>
           </div>
           <div class="field">
@@ -150,7 +149,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
   <script type="module" src="learning-exercises.js"></script>
 </body>
 </html>

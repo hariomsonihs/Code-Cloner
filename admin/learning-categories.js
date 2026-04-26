@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 
 const firebaseConfig = window.__env || {};
@@ -8,6 +8,19 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 let editingId = null;
+
+function parseOrder(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function sortDocsByOrder(docs) {
+  return [...docs].sort((a, b) => {
+    const orderA = parseOrder(a.data()?.order);
+    const orderB = parseOrder(b.data()?.order);
+    return orderA - orderB;
+  });
+}
 
 initShellUI();
 
@@ -51,18 +64,18 @@ async function loadCategories() {
   console.log('Loading categories...');
   
   try {
-    const q = query(collection(db, 'learning_categories'), orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(collection(db, 'learning_categories'));
+    const categoryDocs = sortDocsByOrder(snapshot.docs);
     
-    console.log('Categories found:', snapshot.size);
+    console.log('Categories found:', categoryDocs.length);
     
-    if (snapshot.empty) {
+    if (!categoryDocs.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#666">No categories yet. Click "+ Add Category" to create one!</td></tr>';
       return;
     }
 
     tbody.innerHTML = '';
-    for (const docSnap of snapshot.docs) {
+    for (const docSnap of categoryDocs) {
       const cat = docSnap.data();
       console.log('Category:', cat.name);
       
@@ -80,7 +93,7 @@ async function loadCategories() {
         <td style="font-size:2rem">${cat.icon || '📚'}</td>
         <td><strong>${cat.name}</strong></td>
         <td>${cat.description || '-'}</td>
-        <td>${cat.order}</td>
+        <td>${parseOrder(cat.order)}</td>
         <td>${coursesCount}</td>
         <td>
           <button class="btn btn-sm btn-soft edit-btn" data-id="${docSnap.id}">Edit</button>
@@ -108,8 +121,8 @@ async function editCategory(id) {
   editingId = id;
   
   try {
-    const docSnap = await getDocs(query(collection(db, 'learning_categories')));
-    const cat = docSnap.docs.find(d => d.id === id)?.data();
+    const docSnap = await getDoc(doc(db, 'learning_categories', id));
+    const cat = docSnap.exists() ? docSnap.data() : null;
     
     if (cat) {
       document.getElementById('modalTitle').textContent = 'Edit Category';
@@ -126,7 +139,7 @@ async function editCategory(id) {
 }
 
 async function deleteCategory(id) {
-  if (confirm('Delete this category? All courses, topics, and exercises will be deleted!')) {
+  if (confirm('Delete this category? All courses and exercises will be deleted!')) {
     try {
       await deleteDoc(doc(db, 'learning_categories', id));
       alert('Category deleted!');
@@ -164,7 +177,7 @@ document.getElementById('categoryForm').addEventListener('submit', async (e) => 
     icon: document.getElementById('icon').value,
     name: document.getElementById('name').value,
     description: document.getElementById('description').value,
-    order: parseInt(document.getElementById('order').value),
+    order: parseOrder(document.getElementById('order').value),
     updatedAt: serverTimestamp()
   };
 

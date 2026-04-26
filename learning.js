@@ -1,9 +1,17 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const firebaseConfig = window.__env || {};
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+function sortDocsByOrder(docs) {
+  return [...docs].sort((a, b) => {
+    const orderA = Number(a.data()?.order ?? 0);
+    const orderB = Number(b.data()?.order ?? 0);
+    return orderA - orderB;
+  });
+}
 
 // Category color schemes
 const categoryColors = {
@@ -22,12 +30,12 @@ async function loadCategories() {
   console.log('Loading categories for user website...');
   
   try {
-    const q = query(collection(db, 'learning_categories'), orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(collection(db, 'learning_categories'));
+    const categoryDocs = sortDocsByOrder(snapshot.docs);
     
-    console.log('Categories found:', snapshot.size);
+    console.log('Categories found:', categoryDocs.length);
     
-    if (snapshot.empty) {
+    if (!categoryDocs.length) {
       grid.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">📚</div>
@@ -40,10 +48,9 @@ async function loadCategories() {
 
     grid.innerHTML = '';
     let totalCourses = 0;
-    let totalTopics = 0;
     let totalExercises = 0;
 
-    for (const doc of snapshot.docs) {
+    for (const doc of categoryDocs) {
       const cat = doc.data();
       const colors = categoryColors[cat.name] || { start: '#667eea', end: '#764ba2' };
       
@@ -56,16 +63,10 @@ async function loadCategories() {
         coursesCount = coursesSnap.size;
         totalCourses += coursesCount;
 
-        // Count topics and exercises
-        for (const courseDoc of coursesSnap.docs) {
-          const topicsSnap = await getDocs(collection(db, `learning_categories/${doc.id}/courses/${courseDoc.id}/topics`));
-          totalTopics += topicsSnap.size;
-          
-          for (const topicDoc of topicsSnap.docs) {
-            const exercisesSnap = await getDocs(collection(db, `learning_categories/${doc.id}/courses/${courseDoc.id}/topics/${topicDoc.id}/exercises`));
-            totalExercises += exercisesSnap.size;
-          }
-        }
+        const exerciseCounts = await Promise.all(
+          coursesSnap.docs.map((courseDoc) => countCourseExercises(doc.id, courseDoc.id))
+        );
+        totalExercises += exerciseCounts.reduce((sum, count) => sum + count, 0);
       } catch (err) {
         console.log('Error counting for category:', err);
       }
@@ -87,9 +88,8 @@ async function loadCategories() {
     }
 
     // Update stats
-    document.getElementById('totalCategories').textContent = snapshot.size;
+    document.getElementById('totalCategories').textContent = categoryDocs.length;
     document.getElementById('totalCourses').textContent = totalCourses;
-    document.getElementById('totalTopics').textContent = totalTopics;
     document.getElementById('totalExercises').textContent = totalExercises;
 
     console.log('Categories loaded successfully!');
@@ -103,6 +103,35 @@ async function loadCategories() {
         <p>${error.message}</p>
       </div>
     `;
+  }
+}
+
+async function countCourseExercises(categoryId, courseId) {
+  try {
+    const directExercisesSnap = await getDocs(
+      collection(db, `learning_categories/${categoryId}/courses/${courseId}/exercises`)
+    );
+
+    if (directExercisesSnap.size > 0) {
+      return directExercisesSnap.size;
+    }
+
+    const topicsSnap = await getDocs(
+      collection(db, `learning_categories/${categoryId}/courses/${courseId}/topics`)
+    );
+
+    let legacyCount = 0;
+    for (const topicDoc of topicsSnap.docs) {
+      const topicExercisesSnap = await getDocs(
+        collection(db, `learning_categories/${categoryId}/courses/${courseId}/topics/${topicDoc.id}/exercises`)
+      );
+      legacyCount += topicExercisesSnap.size;
+    }
+
+    return legacyCount;
+  } catch (error) {
+    console.log('Error counting course exercises:', error);
+    return 0;
   }
 }
 

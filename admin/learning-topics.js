@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 
 const firebaseConfig = window.__env || {};
@@ -10,6 +10,15 @@ const auth = getAuth(app);
 let editingId = null;
 let selectedCategory = null;
 let selectedCourse = null;
+
+function parseOrder(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function sortDocsByOrder(docs) {
+  return [...docs].sort((a, b) => parseOrder(a.data()?.order) - parseOrder(b.data()?.order));
+}
 
 initShellUI();
 
@@ -50,14 +59,14 @@ async function loadCategories() {
   const select = document.getElementById('categoryFilter');
   
   try {
-    const q = query(collection(db, 'learning_categories'), orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(collection(db, 'learning_categories'));
+    const categoryDocs = sortDocsByOrder(snapshot.docs);
     
     select.innerHTML = '<option value="">Select a category</option>';
-    snapshot.docs.forEach(doc => {
-      const cat = doc.data();
+    categoryDocs.forEach(docSnap => {
+      const cat = docSnap.data();
       const option = document.createElement('option');
-      option.value = doc.id;
+      option.value = docSnap.id;
       option.textContent = `${cat.icon || ''} ${cat.name}`;
       select.appendChild(option);
     });
@@ -77,14 +86,14 @@ document.getElementById('categoryFilter').addEventListener('change', async (e) =
     courseSelect.innerHTML = '<option value="">Loading...</option>';
     
     try {
-      const q = query(collection(db, `learning_categories/${selectedCategory}/courses`), orderBy('order', 'asc'));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(collection(db, `learning_categories/${selectedCategory}/courses`));
+      const courseDocs = sortDocsByOrder(snapshot.docs);
       
       courseSelect.innerHTML = '<option value="">Select a course</option>';
-      snapshot.docs.forEach(doc => {
-        const course = doc.data();
+      courseDocs.forEach(docSnap => {
+        const course = docSnap.data();
         const option = document.createElement('option');
-        option.value = doc.id;
+        option.value = docSnap.id;
         option.textContent = `${course.icon || ''} ${course.name}`;
         courseSelect.appendChild(option);
       });
@@ -116,16 +125,16 @@ async function loadTopics() {
   }
 
   try {
-    const q = query(collection(db, `learning_categories/${selectedCategory}/courses/${selectedCourse}/topics`), orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(collection(db, `learning_categories/${selectedCategory}/courses/${selectedCourse}/topics`));
+    const topicDocs = sortDocsByOrder(snapshot.docs);
     
-    if (snapshot.empty) {
+    if (!topicDocs.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem">No topics yet</td></tr>';
       return;
     }
 
     tbody.innerHTML = '';
-    for (const docSnap of snapshot.docs) {
+    for (const docSnap of topicDocs) {
       const topic = docSnap.data();
       
       // Count exercises
@@ -136,7 +145,7 @@ async function loadTopics() {
         <td><strong>${topic.name}</strong></td>
         <td>${topic.description || '-'}</td>
         <td>${topic.duration || 0} min</td>
-        <td>${topic.order}</td>
+        <td>${parseOrder(topic.order)}</td>
         <td>${exercisesSnap.size}</td>
         <td>
           <button class="btn btn-sm btn-soft edit-btn" data-id="${docSnap.id}">Edit</button>
@@ -161,8 +170,8 @@ async function loadTopics() {
 
 async function editTopic(id) {
   editingId = id;
-  const docSnap = await getDocs(query(collection(db, `learning_categories/${selectedCategory}/courses/${selectedCourse}/topics`)));
-  const topic = docSnap.docs.find(d => d.id === id)?.data();
+  const docSnap = await getDoc(doc(db, `learning_categories/${selectedCategory}/courses/${selectedCourse}/topics`, id));
+  const topic = docSnap.exists() ? docSnap.data() : null;
   
   if (topic) {
     document.getElementById('modalTitle').textContent = 'Edit Topic';
@@ -212,8 +221,8 @@ document.getElementById('topicForm').addEventListener('submit', async (e) => {
   const data = {
     name: document.getElementById('name').value,
     description: document.getElementById('description').value,
-    duration: parseInt(document.getElementById('duration').value),
-    order: parseInt(document.getElementById('order').value),
+    duration: parseOrder(document.getElementById('duration').value),
+    order: parseOrder(document.getElementById('order').value),
     updatedAt: serverTimestamp()
   };
 

@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const firebaseConfig = window.__env || {};
 const app = initializeApp(firebaseConfig);
@@ -8,6 +8,14 @@ const db = getFirestore(app);
 const urlParams = new URLSearchParams(window.location.search);
 const categoryId = urlParams.get('category');
 const courseId = urlParams.get('course');
+
+function sortDocsByOrder(docs) {
+  return [...docs].sort((a, b) => {
+    const orderA = Number(a.data()?.order ?? 0);
+    const orderB = Number(b.data()?.order ?? 0);
+    return orderA - orderB;
+  });
+}
 
 async function loadCourse() {
   if (!categoryId || !courseId) {
@@ -45,10 +53,10 @@ async function loadTopics() {
   const list = document.getElementById('topicsList');
   
   try {
-    const q = query(collection(db, `learning_categories/${categoryId}/courses/${courseId}/topics`), orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(collection(db, `learning_categories/${categoryId}/courses/${courseId}/topics`));
+    const topicDocs = sortDocsByOrder(snapshot.docs);
     
-    if (snapshot.empty) {
+    if (!topicDocs.length) {
       list.innerHTML = '<div class="loading">No topics found yet!</div>';
       return;
     }
@@ -56,7 +64,7 @@ async function loadTopics() {
     list.innerHTML = '';
     let totalExercises = 0;
 
-    for (const [index, topicDoc] of snapshot.docs.entries()) {
+    for (const [index, topicDoc] of topicDocs.entries()) {
       const topic = topicDoc.data();
       
       // Count exercises
@@ -81,7 +89,7 @@ async function loadTopics() {
       list.appendChild(card);
     }
 
-    document.getElementById('topicCount').textContent = snapshot.size;
+    document.getElementById('topicCount').textContent = topicDocs.length;
     document.getElementById('exerciseCount').textContent = totalExercises;
 
   } catch (error) {

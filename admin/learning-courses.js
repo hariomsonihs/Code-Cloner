@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 
 const firebaseConfig = window.__env || {};
@@ -9,6 +9,15 @@ const auth = getAuth(app);
 
 let editingId = null;
 let selectedCategory = null;
+
+function parseOrder(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function sortDocsByOrder(docs) {
+  return [...docs].sort((a, b) => parseOrder(a.data()?.order) - parseOrder(b.data()?.order));
+}
 
 initShellUI();
 
@@ -49,14 +58,14 @@ async function loadCategories() {
   const select = document.getElementById('categoryFilter');
   
   try {
-    const q = query(collection(db, 'learning_categories'), orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(collection(db, 'learning_categories'));
+    const categoryDocs = sortDocsByOrder(snapshot.docs);
     
     select.innerHTML = '<option value="">Select a category</option>';
-    snapshot.docs.forEach(doc => {
-      const cat = doc.data();
+    categoryDocs.forEach(docSnap => {
+      const cat = docSnap.data();
       const option = document.createElement('option');
-      option.value = doc.id;
+      option.value = docSnap.id;
       option.textContent = `${cat.icon || ''} ${cat.name}`;
       select.appendChild(option);
     });
@@ -84,16 +93,16 @@ async function loadCourses() {
   }
 
   try {
-    const q = query(collection(db, `learning_categories/${selectedCategory}/courses`), orderBy('order', 'asc'));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(collection(db, `learning_categories/${selectedCategory}/courses`));
+    const courseDocs = sortDocsByOrder(snapshot.docs);
     
-    if (snapshot.empty) {
+    if (!courseDocs.length) {
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem">No courses yet</td></tr>';
       return;
     }
 
     tbody.innerHTML = '';
-    snapshot.docs.forEach(docSnap => {
+    courseDocs.forEach(docSnap => {
       const course = docSnap.data();
       
       const row = document.createElement('tr');
@@ -103,7 +112,7 @@ async function loadCourses() {
         <td>${course.description || '-'}</td>
         <td><span class="badge badge-blue">${course.level || 'Beginner'}</span></td>
         <td>${course.duration || 0}h</td>
-        <td>${course.order}</td>
+        <td>${parseOrder(course.order)}</td>
         <td>
           <button class="btn btn-sm btn-soft edit-btn" data-id="${docSnap.id}">Edit</button>
           <button class="btn btn-sm btn-danger delete-btn" data-id="${docSnap.id}">Delete</button>
@@ -127,8 +136,8 @@ async function loadCourses() {
 
 async function editCourse(id) {
   editingId = id;
-  const docSnap = await getDocs(query(collection(db, `learning_categories/${selectedCategory}/courses`)));
-  const course = docSnap.docs.find(d => d.id === id)?.data();
+  const docSnap = await getDoc(doc(db, `learning_categories/${selectedCategory}/courses`, id));
+  const course = docSnap.exists() ? docSnap.data() : null;
   
   if (course) {
     document.getElementById('modalTitle').textContent = 'Edit Course';
@@ -143,7 +152,7 @@ async function editCourse(id) {
 }
 
 async function deleteCourse(id) {
-  if (confirm('Delete this course? All topics and exercises will be deleted!')) {
+  if (confirm('Delete this course? All exercises in this course will be deleted!')) {
     try {
       await deleteDoc(doc(db, `learning_categories/${selectedCategory}/courses`, id));
       alert('Course deleted!');
@@ -182,8 +191,8 @@ document.getElementById('courseForm').addEventListener('submit', async (e) => {
     name: document.getElementById('name').value,
     description: document.getElementById('description').value,
     level: document.getElementById('level').value,
-    duration: parseInt(document.getElementById('duration').value),
-    order: parseInt(document.getElementById('order').value),
+    duration: parseOrder(document.getElementById('duration').value),
+    order: parseOrder(document.getElementById('order').value),
     updatedAt: serverTimestamp()
   };
 
