@@ -14,6 +14,7 @@ let allExercises = [];
 let currentIndex = 0;
 let completedExerciseKeys = new Set();
 const COMPLETION_STORAGE_KEY = 'completedExercises';
+let closeExerciseImageZoomActive = null;
 
 function parseOrder(value) {
   const numeric = Number(value);
@@ -172,6 +173,236 @@ function enhanceExerciseCodeBlocks(container) {
   });
 }
 
+function enableExerciseImageZoom(container) {
+  if (!container) return;
+
+  const images = [...container.querySelectorAll('img')];
+  images.forEach((img) => {
+    if (img.dataset.zoomReady === '1') return;
+    img.dataset.zoomReady = '1';
+    img.style.cursor = 'zoom-in';
+    img.addEventListener('click', () => {
+      const source = img.currentSrc || img.src;
+      if (!source) return;
+      openExerciseImageZoom(source, img.alt || 'Exercise image');
+    });
+  });
+}
+
+function openExerciseImageZoom(src, alt = '') {
+  if (!src) return;
+  if (typeof closeExerciseImageZoomActive === 'function') {
+    closeExerciseImageZoomActive();
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'image-zoom-overlay';
+  overlay.innerHTML = `
+    <button class="image-zoom-close" aria-label="Close image">x</button>
+    <div class="image-zoom-content">
+      <img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}">
+    </div>
+    <div class="image-zoom-controls" role="group" aria-label="Image zoom controls">
+      <button class="image-zoom-btn" data-action="zoom-out" aria-label="Zoom out">-</button>
+      <button class="image-zoom-btn" data-action="reset" aria-label="Reset zoom">Reset</button>
+      <button class="image-zoom-btn" data-action="zoom-in" aria-label="Zoom in">+</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+  requestAnimationFrame(() => {
+    overlay.classList.add('active');
+  });
+
+  const image = overlay.querySelector('img');
+  const content = overlay.querySelector('.image-zoom-content');
+  const closeBtn = overlay.querySelector('.image-zoom-close');
+  const controls = [...overlay.querySelectorAll('.image-zoom-btn')];
+  if (!image || !content || !closeBtn) {
+    closeExerciseImageZoom(overlay);
+    return;
+  }
+
+  let scale = 1;
+  let x = 0;
+  let y = 0;
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let initialDistance = 0;
+  let initialScale = 1;
+  let closed = false;
+
+  const clampScale = (value) => Math.min(Math.max(value, 1), 5);
+
+  const applyTransform = () => {
+    image.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+  };
+
+  const reset = () => {
+    scale = 1;
+    x = 0;
+    y = 0;
+    applyTransform();
+  };
+
+  const zoom = (delta) => {
+    scale = clampScale(scale + delta);
+    if (scale === 1) {
+      x = 0;
+      y = 0;
+    }
+    applyTransform();
+  };
+
+  const distance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  const onMouseMove = (event) => {
+    if (!isDragging) return;
+    x = event.clientX - startX;
+    y = event.clientY - startY;
+    applyTransform();
+  };
+
+  const onMouseUp = () => {
+    isDragging = false;
+    image.classList.remove('dragging');
+  };
+
+  const onWheel = (event) => {
+    event.preventDefault();
+    zoom(event.deltaY < 0 ? 0.28 : -0.28);
+  };
+
+  const onImageMouseDown = (event) => {
+    if (scale <= 1) return;
+    isDragging = true;
+    startX = event.clientX - x;
+    startY = event.clientY - y;
+    image.classList.add('dragging');
+    event.preventDefault();
+  };
+
+  const onImageDoubleClick = (event) => {
+    event.preventDefault();
+    if (scale > 1) {
+      reset();
+    } else {
+      scale = 2;
+      applyTransform();
+    }
+  };
+
+  const onTouchStart = (event) => {
+    if (event.touches.length === 2) {
+      initialDistance = distance(event.touches);
+      initialScale = scale;
+      event.preventDefault();
+      return;
+    }
+    if (event.touches.length === 1 && scale > 1) {
+      isDragging = true;
+      startX = event.touches[0].clientX - x;
+      startY = event.touches[0].clientY - y;
+      event.preventDefault();
+    }
+  };
+
+  const onTouchMove = (event) => {
+    if (event.touches.length === 2) {
+      const currentDistance = distance(event.touches);
+      if (initialDistance > 0) {
+        scale = clampScale(initialScale * (currentDistance / initialDistance));
+        if (scale === 1) {
+          x = 0;
+          y = 0;
+        }
+        applyTransform();
+      }
+      event.preventDefault();
+      return;
+    }
+    if (event.touches.length === 1 && isDragging && scale > 1) {
+      x = event.touches[0].clientX - startX;
+      y = event.touches[0].clientY - startY;
+      applyTransform();
+      event.preventDefault();
+    }
+  };
+
+  const onTouchEnd = () => {
+    isDragging = false;
+    image.classList.remove('dragging');
+    if (scale < 1) reset();
+  };
+
+  const onKeyDown = (event) => {
+    if (event.key === 'Escape') close();
+  };
+
+  const onOverlayClick = (event) => {
+    if (event.target === overlay && scale === 1) close();
+  };
+
+  const onControlClick = (event) => {
+    const action = event.currentTarget.dataset.action;
+    if (action === 'zoom-in') zoom(0.28);
+    if (action === 'zoom-out') zoom(-0.28);
+    if (action === 'reset') reset();
+  };
+
+  const cleanup = () => {
+    content.removeEventListener('wheel', onWheel);
+    image.removeEventListener('mousedown', onImageMouseDown);
+    image.removeEventListener('dblclick', onImageDoubleClick);
+    image.removeEventListener('touchstart', onTouchStart);
+    image.removeEventListener('touchmove', onTouchMove);
+    image.removeEventListener('touchend', onTouchEnd);
+    closeBtn.removeEventListener('click', close);
+    overlay.removeEventListener('click', onOverlayClick);
+    controls.forEach((btn) => btn.removeEventListener('click', onControlClick));
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    document.removeEventListener('keydown', onKeyDown);
+  };
+
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    cleanup();
+    closeExerciseImageZoom(overlay);
+    closeExerciseImageZoomActive = null;
+  };
+
+  closeExerciseImageZoomActive = close;
+
+  content.addEventListener('wheel', onWheel, { passive: false });
+  image.addEventListener('mousedown', onImageMouseDown);
+  image.addEventListener('dblclick', onImageDoubleClick);
+  image.addEventListener('touchstart', onTouchStart, { passive: false });
+  image.addEventListener('touchmove', onTouchMove, { passive: false });
+  image.addEventListener('touchend', onTouchEnd, { passive: true });
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', onOverlayClick);
+  controls.forEach((btn) => btn.addEventListener('click', onControlClick));
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+  document.addEventListener('keydown', onKeyDown);
+}
+
+function closeExerciseImageZoom(overlay) {
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+  setTimeout(() => {
+    if (overlay.isConnected) overlay.remove();
+  }, 220);
+}
+
 async function loadBreadcrumb() {
   try {
     const [catDoc, courseDoc] = await Promise.all([
@@ -289,7 +520,9 @@ async function renderCurrentExercise() {
       ${exercise.content || '<p>No content available.</p>'}
     </div>
   `;
-  enhanceExerciseCodeBlocks(content.querySelector('.exercise-body'));
+  const exerciseBody = content.querySelector('.exercise-body');
+  enhanceExerciseCodeBlocks(exerciseBody);
+  enableExerciseImageZoom(exerciseBody);
 
   document.getElementById('prevExercise').disabled = currentIndex === 0;
   document.getElementById('nextExercise').disabled = currentIndex === allExercises.length - 1;
