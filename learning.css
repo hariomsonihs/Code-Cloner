@@ -516,6 +516,10 @@
   font-size: 0.78rem;
   font-weight: 500;
   transition: 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.42rem;
 }
 
 [data-page="exercise"] .exercise-nav-item:hover {
@@ -527,6 +531,38 @@
   border-color: rgba(47, 123, 255, 0.35);
   color: #1f4f98;
   font-weight: 700;
+}
+
+[data-page="exercise"] .exercise-nav-item.completed {
+  border-color: rgba(17, 167, 121, 0.35);
+  background: linear-gradient(130deg, rgba(17, 167, 121, 0.08), rgba(22, 185, 164, 0.08));
+}
+
+[data-page="exercise"] .exercise-nav-main {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+}
+
+[data-page="exercise"] .exercise-nav-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-page="exercise"] .exercise-nav-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 167, 121, 0.4);
+  background: rgba(17, 167, 121, 0.16);
+  color: #0f7256;
+  font-size: 0.74rem;
+  font-weight: 800;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
 }
 
 [data-page="exercise"] .exercise-main {
@@ -543,6 +579,32 @@
   font-weight: 600;
   background: rgba(255, 255, 255, 0.86);
   color: #234f8c;
+}
+
+[data-page="exercise"] .exercise-progress-wrap {
+  margin-top: 0.7rem;
+}
+
+[data-page="exercise"] .exercise-progress-meta {
+  font-size: 0.78rem;
+  color: #365685;
+  font-weight: 600;
+  margin-bottom: 0.36rem;
+}
+
+[data-page="exercise"] .exercise-progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(76, 111, 166, 0.18);
+  overflow: hidden;
+}
+
+[data-page="exercise"] .exercise-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #11a779, #16b9a4);
+  transition: width 0.25s ease;
 }
 
 [data-page="exercise"] .exercise-content {

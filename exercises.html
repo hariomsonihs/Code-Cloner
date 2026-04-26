@@ -72,6 +72,18 @@
       opacity: 0.94;
       max-width: 720px;
     }
+    .course-progress {
+      margin-top: 0.46rem !important;
+      font-size: 0.78rem !important;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.95);
+      display: inline-flex;
+      padding: 0.18rem 0.52rem;
+      border: 1px solid rgba(255, 255, 255, 0.34);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      width: fit-content;
+    }
     .exercises-container {
       width: 100%;
       max-width: none;
@@ -105,6 +117,10 @@
       transform: translateY(-3px);
       box-shadow: 0 16px 30px rgba(58, 84, 127, 0.18);
       border-color: rgba(95, 131, 255, 0.4);
+    }
+    .exercise-card.completed {
+      border-color: rgba(17, 167, 121, 0.38);
+      background: linear-gradient(130deg, rgba(17, 167, 121, 0.08), rgba(22, 185, 164, 0.08));
     }
     .exercise-card::after {
       content: "";
@@ -179,6 +195,12 @@
       font-weight: 700;
       flex-shrink: 0;
     }
+    .exercise-arrow.completed {
+      background: rgba(17, 167, 121, 0.16);
+      border-color: rgba(17, 167, 121, 0.42);
+      color: #0f7256;
+      font-size: 0.82rem;
+    }
     .empty-state {
       text-align: center;
       padding: 4rem 2rem;
@@ -205,6 +227,7 @@
       }
       .course-info h1 { font-size: 1.15rem; }
       .course-info p { font-size: 0.82rem; }
+      .course-progress { font-size: 0.72rem !important; }
       .exercises-container { padding: 0 0 2.6rem; }
       .exercise-card {
         min-height: 68px;
@@ -274,6 +297,7 @@
       <div class="course-info">
         <h1 id="courseTitle">Loading...</h1>
         <p id="courseDesc"></p>
+        <p class="course-progress" id="courseProgress">0/0 completed (0%)</p>
       </div>
     </div>
   </div>
@@ -303,6 +327,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const categoryId = urlParams.get('category');
     const courseId = urlParams.get('course');
+    const COMPLETION_STORAGE_KEY = 'completedExercises';
+    let completedExerciseKeys = new Set();
 
     function parseOrder(value) {
       const numeric = Number(value);
@@ -311,6 +337,30 @@
 
     function sortDocsByOrder(docs) {
       return [...docs].sort((a, b) => parseOrder(a.data()?.order) - parseOrder(b.data()?.order));
+    }
+
+    function loadCompletedExerciseKeys() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(COMPLETION_STORAGE_KEY) || '[]');
+        completedExerciseKeys = new Set(Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : []);
+      } catch (error) {
+        console.error('Error parsing completed exercises:', error);
+        completedExerciseKeys = new Set();
+      }
+    }
+
+    function isExerciseCompleted(urlId) {
+      const canonical = `${categoryId}_${courseId}_${urlId}`;
+      if (completedExerciseKeys.has(canonical)) return true;
+
+      if (typeof urlId === 'string' && urlId.includes('__')) {
+        const [topicId, exerciseId] = urlId.split('__');
+        if (topicId && exerciseId) {
+          const legacy = `${categoryId}_${courseId}_${topicId}_${exerciseId}`;
+          return completedExerciseKeys.has(legacy);
+        }
+      }
+      return false;
     }
 
     async function loadCourse() {
@@ -391,14 +441,17 @@
 
     async function loadExercises() {
       const grid = document.getElementById('exercisesGrid');
+      const courseProgress = document.getElementById('courseProgress');
 
       try {
+        loadCompletedExerciseKeys();
         let exercises = await loadDirectExercises();
         if (!exercises.length) {
           exercises = await loadLegacyExercises();
         }
 
         if (!exercises.length) {
+          if (courseProgress) courseProgress.textContent = '0/0 completed (0%)';
           grid.innerHTML = `
             <div class="empty-state">
               <div class="empty-icon">💪</div>
@@ -410,11 +463,15 @@
         }
 
         grid.innerHTML = '';
+        let completedCount = 0;
 
         exercises.forEach((exercise, index) => {
+          const completed = isExerciseCompleted(exercise.urlId);
+          if (completed) completedCount += 1;
+
           const card = document.createElement('a');
           card.href = `exercise.html?category=${categoryId}&course=${courseId}&exercise=${encodeURIComponent(exercise.urlId)}`;
-          card.className = 'exercise-card';
+          card.className = `exercise-card ${completed ? 'completed' : ''}`.trim();
           card.innerHTML = `
             <div class="exercise-number">${index + 1}</div>
             <div class="exercise-main">
@@ -424,12 +481,19 @@
                 <span>👁️ ${exercise.views} views</span>
               </div>
             </div>
-            <span class="exercise-arrow" aria-hidden="true">→</span>
+            <span class="exercise-arrow ${completed ? 'completed' : ''}" aria-hidden="true">${completed ? '✓' : '→'}</span>
           `;
           grid.appendChild(card);
         });
+
+        if (courseProgress) {
+          const total = exercises.length;
+          const percent = total ? Math.round((completedCount / total) * 100) : 0;
+          courseProgress.textContent = `${completedCount}/${total} completed (${percent}%)`;
+        }
       } catch (error) {
         console.error('Error loading exercises:', error);
+        if (courseProgress) courseProgress.textContent = 'Progress unavailable';
         grid.innerHTML = `
           <div class="empty-state">
             <div class="empty-icon">❌</div>

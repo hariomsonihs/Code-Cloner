@@ -12,6 +12,8 @@ let exerciseParam = urlParams.get('exercise') || urlParams.get('id');
 
 let allExercises = [];
 let currentIndex = 0;
+let completedExerciseKeys = new Set();
+const COMPLETION_STORAGE_KEY = 'completedExercises';
 
 function parseOrder(value) {
   const numeric = Number(value);
@@ -33,6 +35,67 @@ function sortDocsByOrder(docs) {
 
 function buildExerciseUrl(exerciseUrlId) {
   return `exercise.html?category=${categoryId}&course=${courseId}&exercise=${encodeURIComponent(exerciseUrlId)}`;
+}
+
+function loadCompletedExerciseKeys() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(COMPLETION_STORAGE_KEY) || '[]');
+    completedExerciseKeys = new Set(Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : []);
+  } catch (error) {
+    console.error('Error parsing completed exercises:', error);
+    completedExerciseKeys = new Set();
+  }
+}
+
+function persistCompletedExerciseKeys() {
+  localStorage.setItem(COMPLETION_STORAGE_KEY, JSON.stringify([...completedExerciseKeys]));
+}
+
+function getCompletionKey(exercise) {
+  return `${categoryId}_${courseId}_${exercise.urlId}`;
+}
+
+function getLegacyCompletionKey(exercise) {
+  if (typeof exercise.urlId === 'string' && exercise.urlId.includes('__')) {
+    const [topicId, exerciseId] = exercise.urlId.split('__');
+    if (topicId && exerciseId) {
+      return `${categoryId}_${courseId}_${topicId}_${exerciseId}`;
+    }
+  }
+  return '';
+}
+
+function isExerciseCompleted(exercise) {
+  if (!exercise) return false;
+  const canonical = getCompletionKey(exercise);
+  if (completedExerciseKeys.has(canonical)) return true;
+
+  const legacy = getLegacyCompletionKey(exercise);
+  return legacy ? completedExerciseKeys.has(legacy) : false;
+}
+
+function updateProgressUI() {
+  const meta = document.getElementById('exerciseProgressMeta');
+  const fill = document.getElementById('exerciseProgressFill');
+  if (!meta || !fill) return;
+
+  const total = allExercises.length;
+  const completed = allExercises.filter((exercise) => isExerciseCompleted(exercise)).length;
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  meta.textContent = `${completed}/${total} completed (${percentage}%)`;
+  fill.style.width = `${percentage}%`;
+}
+
+function updateMarkCompleteButton() {
+  const button = document.getElementById('markComplete');
+  if (!button) return;
+
+  const currentExercise = allExercises[currentIndex];
+  const completed = isExerciseCompleted(currentExercise);
+
+  button.disabled = completed;
+  button.textContent = completed ? 'Completed ✓' : 'Mark Complete';
 }
 
 function detectCodeLanguage(codeText = '') {
@@ -193,12 +256,16 @@ function renderExerciseList() {
   nav.innerHTML = '';
 
   allExercises.forEach((exercise, index) => {
+    const completed = isExerciseCompleted(exercise);
     const item = document.createElement('a');
     item.href = buildExerciseUrl(exercise.urlId);
-    item.className = `exercise-nav-item ${index === currentIndex ? 'active' : ''}`;
+    item.className = `exercise-nav-item ${index === currentIndex ? 'active' : ''} ${completed ? 'completed' : ''}`.trim();
     item.innerHTML = `
-      <span>${index + 1}.</span>
-      <span>${escapeHtml(exercise.title)}</span>
+      <span class="exercise-nav-main">
+        <span>${index + 1}.</span>
+        <span class="exercise-nav-title">${escapeHtml(exercise.title)}</span>
+      </span>
+      ${completed ? '<span class="exercise-nav-check" aria-hidden="true">✓</span>' : ''}
     `;
     nav.appendChild(item);
   });
@@ -226,6 +293,7 @@ async function renderCurrentExercise() {
 
   document.getElementById('prevExercise').disabled = currentIndex === 0;
   document.getElementById('nextExercise').disabled = currentIndex === allExercises.length - 1;
+  updateMarkCompleteButton();
 
   try {
     await updateDoc(doc(db, exercise.path), { views: increment(1) });
@@ -254,6 +322,9 @@ async function loadExercises() {
       document.getElementById('toggleSidebar').disabled = true;
       document.getElementById('prevExercise').disabled = true;
       document.getElementById('nextExercise').disabled = true;
+      document.getElementById('markComplete').disabled = true;
+      document.getElementById('markComplete').textContent = 'Mark Complete';
+      updateProgressUI();
       return;
     }
 
@@ -270,6 +341,7 @@ async function loadExercises() {
 
     exerciseParam = allExercises[currentIndex].urlId;
     renderExerciseList();
+    updateProgressUI();
     await renderCurrentExercise();
     syncUrlWithCurrentExercise();
   } catch (error) {
@@ -309,15 +381,14 @@ function setupExerciseNavigation() {
   document.getElementById('markComplete').addEventListener('click', () => {
     const exercise = allExercises[currentIndex];
     if (!exercise) return;
+    if (isExerciseCompleted(exercise)) return;
 
-    const completed = JSON.parse(localStorage.getItem('completedExercises') || '[]');
-    const key = `${categoryId}_${courseId}_${exercise.urlId}`;
-
-    if (!completed.includes(key)) {
-      completed.push(key);
-      localStorage.setItem('completedExercises', JSON.stringify(completed));
-      alert('Exercise marked as complete.');
-    }
+    completedExerciseKeys.add(getCompletionKey(exercise));
+    persistCompletedExerciseKeys();
+    renderExerciseList();
+    updateProgressUI();
+    updateMarkCompleteButton();
+    alert('Exercise marked as complete.');
   });
 }
 
@@ -364,6 +435,7 @@ function setupTopDrawer() {
 if (!categoryId || !courseId) {
   window.location.href = 'learning.html';
 } else {
+  loadCompletedExerciseKeys();
   setupTopDrawer();
   setupSidebarToggles();
   setupExerciseNavigation();
