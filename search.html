@@ -110,7 +110,7 @@
     <main class="app-shell">
       <div class="search-hero reveal">
         <h1>🔍 Search Everything</h1>
-        <p>Search across articles, tips, facts, projects and resources — all at once</p>
+        <p>Search across articles, tips, facts, projects, resources and courses — all at once</p>
         <div class="search-input-wrap">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="globalSearch" type="search" placeholder="Type to search... e.g. JavaScript, CSS, Python" autofocus/>
@@ -122,6 +122,7 @@
           <button class="filter-chip" data-type="facts">🔍 Facts</button>
           <button class="filter-chip" data-type="projects">🚀 Projects</button>
           <button class="filter-chip" data-type="resources">🔗 Resources</button>
+          <button class="filter-chip" data-type="courses">📚 Courses</button>
         </div>
       </div>
 
@@ -132,9 +133,9 @@
     <nav class="bottom-nav">
       <a href="index.html" class="js-nav-link"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg><span>Home</span></a>
       <a href="articles.html" class="js-nav-link"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8 9h8M8 12h8M8 15h5"/></svg><span>Articles</span></a>
-      <a href="search.html" class="js-nav-link"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Search</span></a>
+      <a href="learning.html" class="js-nav-link"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Learning</span></a>
       <a href="projects.html" class="js-nav-link"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4zM9 7V5h6v2"/></svg><span>Projects</span></a>
-      <a href="profile.html" class="js-nav-link"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></a>
+      <a href="search.html" class="js-nav-link"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Search</span></a>
     </nav>
 
     <script type="module">
@@ -144,8 +145,8 @@
       import { initNotifications } from "./notifications.js";
       initShellNavigation(); initRevealAnimations(); initNotifications();
 
-      const typeIcon   = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗" };
-      const typeBanner = { articles:"banner-article", tips:"banner-tip", facts:"banner-fact", projects:"banner-project", resources:"banner-resource" };
+      const typeIcon   = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗", courses:"📚" };
+      const typeBanner = { articles:"banner-article", tips:"banner-tip", facts:"banner-fact", projects:"banner-project", resources:"banner-resource", courses:"banner-article" };
 
       let allItems = [], activeType = "all";
 
@@ -165,7 +166,29 @@
             };
           });
         }));
-        allItems = results.flat();
+        
+        // Load courses from learning_categories
+        const categoriesSnap = await getDocs(collection(db, "learning_categories"));
+        const courseResults = [];
+        for (const catDoc of categoriesSnap.docs) {
+          const categoryId = catDoc.id;
+          const categoryData = catDoc.data();
+          const coursesSnap = await getDocs(collection(db, `learning_categories/${categoryId}/courses`));
+          coursesSnap.docs.forEach(courseDoc => {
+            const courseData = courseDoc.data();
+            courseResults.push({
+              id: courseDoc.id,
+              categoryId: categoryId,
+              type: "courses",
+              title: courseData.name || "",
+              desc: courseData.description || "",
+              category: categoryData.name || "",
+              tags: "",
+            });
+          });
+        }
+        
+        allItems = [...results.flat(), ...courseResults];
       }
 
       function stripHtml(h) { return (h||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim(); }
@@ -182,7 +205,10 @@
         meta.innerHTML = `Found <strong>${items.length}</strong> result${items.length!==1?"s":""}`;
         grid.innerHTML = items.map(item => {
           const desc = stripHtml(item.desc).slice(0,120).trim();
-          return `<a class="content-card" href="read.html?type=${item.type}&id=${item.id}">
+          const itemUrl = item.type === "courses" 
+            ? `exercises.html?category=${item.categoryId}&course=${item.id}`
+            : `read.html?type=${item.type}&id=${item.id}`;
+          return `<a class="content-card" href="${itemUrl}">
             <div class="card-banner ${typeBanner[item.type]}">
               <span class="card-banner-icon">${typeIcon[item.type]}</span>
               <div class="card-banner-shape"></div>

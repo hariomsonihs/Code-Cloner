@@ -123,6 +123,13 @@ service cloud.firestore {
           allow write: if isAdmin();
         }
         
+        // Videos under course
+        match /videos/{videoId} {
+          allow read: if true;
+          allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views']);
+          allow write: if isAdmin();
+        }
+        
         // Legacy topic-based structure (kept for backward compatibility)
         match /topics/{topicId} {
           allow read: if true;

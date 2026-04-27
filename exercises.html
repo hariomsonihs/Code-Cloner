@@ -209,6 +209,96 @@
       box-shadow: 0 10px 30px rgba(58, 84, 127, 0.14);
     }
     .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+    
+    /* Tabs Styling */
+    .tab-btn.active {
+      color: #2f4c8d !important;
+      border-bottom-color: #5f83ff !important;
+    }
+    .tab-btn:hover {
+      color: #2f4c8d;
+      background: rgba(95, 131, 255, 0.05);
+    }
+    
+    /* Videos Grid */
+    .videos-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+    }
+    .video-card {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 14px;
+      padding: 0;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.22s ease;
+      box-shadow: 0 10px 24px rgba(58, 84, 127, 0.12);
+      border: 1px solid rgba(93, 124, 180, 0.2);
+      overflow: hidden;
+    }
+    .video-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 30px rgba(58, 84, 127, 0.18);
+      border-color: rgba(95, 131, 255, 0.4);
+    }
+    .video-thumbnail {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: #000;
+      overflow: hidden;
+    }
+    .video-thumbnail iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .video-info {
+      padding: 0.85rem 1rem;
+    }
+    .video-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 0.4rem;
+      color: #13233f;
+      line-height: 1.4;
+    }
+    .video-desc {
+      font-size: 0.85rem;
+      color: #5d7197;
+      margin: 0 0 0.5rem;
+      line-height: 1.5;
+    }
+    .video-meta {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 0.75rem;
+      color: #5d7197;
+    }
+    .video-badge {
+      display: inline-flex;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: #eef3ff;
+      color: #4b5f8a;
+      border: 1px solid #d7e2ff;
+    }
+    .video-badge.related {
+      background: #e3f2fd;
+      color: #1976d2;
+      border-color: #bbdefb;
+    }
     @media (max-width: 768px) {
       .courses-hero {
         border-radius: 18px;
@@ -303,8 +393,27 @@
   </div>
 
   <div class="exercises-container">
-    <div class="exercises-grid" id="exercisesGrid">
-      <div style="text-align:center;padding:2rem;color:#999">Loading exercises...</div>
+    <div class="tabs-container" style="margin-bottom: 1.2rem;">
+      <div class="tabs-nav" style="display: flex; gap: 0.5rem; border-bottom: 2px solid rgba(95, 131, 255, 0.15); padding: 0 0.5rem;">
+        <button class="tab-btn active" data-tab="exercises" style="padding: 0.65rem 1.2rem; border: none; background: none; font-size: 0.95rem; font-weight: 600; color: #5d7197; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; font-family: 'Outfit', sans-serif;">
+          ✏️ Exercises
+        </button>
+        <button class="tab-btn" data-tab="videos" style="padding: 0.65rem 1.2rem; border: none; background: none; font-size: 0.95rem; font-weight: 600; color: #5d7197; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; font-family: 'Outfit', sans-serif;">
+          🎥 Videos
+        </button>
+      </div>
+    </div>
+    
+    <div class="tab-content active" id="exercisesTab">
+      <div class="exercises-grid" id="exercisesGrid">
+        <div style="text-align:center;padding:2rem;color:#999">Loading exercises...</div>
+      </div>
+    </div>
+    
+    <div class="tab-content" id="videosTab" style="display: none;">
+      <div class="videos-grid" id="videosGrid">
+        <div style="text-align:center;padding:2rem;color:#999">Loading videos...</div>
+      </div>
     </div>
   </div>
 
@@ -313,7 +422,7 @@
     <a href="articles.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8 9h8M8 12h8M8 15h5" /></svg><span>Articles</span></a>
     <a href="learning.html" style="color:var(--brand-2)"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Learning</span></a>
     <a href="projects.html"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4zM9 7V5h6v2" /></svg><span>Projects</span></a>
-    <a href="profile.html"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></a>
+    <a href="search.html"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Search</span></a>
   </nav>
 
   <script type="module">
@@ -532,6 +641,95 @@
 
     loadCourse();
     loadExercises();
+    loadVideos();
+    
+    async function loadVideos() {
+      const grid = document.getElementById('videosGrid');
+
+      try {
+        const videosSnapshot = await getDocs(
+          collection(db, `learning_categories/${categoryId}/courses/${courseId}/videos`)
+        );
+        
+        const videosList = [];
+        videosSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          videosList.push({
+            id: doc.id,
+            ...data,
+            order: data.order || 0
+          });
+        });
+        
+        videosList.sort((a, b) => a.order - b.order);
+
+        if (!videosList.length) {
+          grid.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">🎥</div>
+              <h3>No videos yet</h3>
+              <p>Videos will be added soon!</p>
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = '';
+        videosList.forEach((video, index) => {
+          const card = document.createElement('div');
+          card.className = 'video-card';
+          
+          const embedUrl = `https://www.youtube.com/embed/${video.videoId}`;
+          
+          card.innerHTML = `
+            <div class="video-thumbnail">
+              <iframe 
+                src="${embedUrl}" 
+                title="${video.title}"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen>
+              </iframe>
+            </div>
+            <div class="video-info">
+              <h3 class="video-title">${video.title}</h3>
+              ${video.description ? `<p class="video-desc">${video.description}</p>` : ''}
+              <div class="video-meta">
+                ${video.duration ? `<span class="video-badge">⏱️ ${video.duration}</span>` : ''}
+                ${video.relatedToExercise ? `<span class="video-badge related">🔗 Related to Exercise</span>` : ''}
+              </div>
+            </div>
+          `;
+          
+          grid.appendChild(card);
+        });
+      } catch (error) {
+        console.error('Error loading videos:', error);
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">❌</div>
+            <h3>Error loading videos</h3>
+            <p>${error.message}</p>
+          </div>
+        `;
+      }
+    }
+    
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabName = btn.dataset.tab;
+        
+        // Update buttons
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Update content
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.style.display = 'none';
+        });
+        document.getElementById(tabName + 'Tab').style.display = 'block';
+      });
+    });
   </script>
 </body>
 </html>
