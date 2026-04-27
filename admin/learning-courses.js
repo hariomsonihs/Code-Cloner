@@ -142,6 +142,7 @@ async function editCourse(id) {
   if (course) {
     document.getElementById('modalTitle').textContent = 'Edit Course';
     document.getElementById('icon').value = course.icon || '';
+    document.getElementById('imageUrl').value = course.imageUrl || '';
     document.getElementById('name').value = course.name || '';
     document.getElementById('description').value = course.description || '';
     document.getElementById('level').value = course.level || 'Beginner';
@@ -188,6 +189,7 @@ document.getElementById('courseForm').addEventListener('submit', async (e) => {
   
   const data = {
     icon: document.getElementById('icon').value,
+    imageUrl: document.getElementById('imageUrl').value.trim(),
     name: document.getElementById('name').value,
     description: document.getElementById('description').value,
     level: document.getElementById('level').value,

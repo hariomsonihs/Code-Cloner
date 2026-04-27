@@ -115,8 +115,8 @@
       <form id="courseForm">
         <div class="form-grid">
           <div class="field">
-            <label for="icon">Icon</label>
-            <input type="text" id="icon" class="input" placeholder="e.g. ??" required>
+            <label for="icon">Icon (Emoji)</label>
+            <input type="text" id="icon" class="input" placeholder="e.g. 📚" required>
           </div>
           <div class="field">
             <label for="level">Level</label>
@@ -125,6 +125,11 @@
               <option>Intermediate</option>
               <option>Advanced</option>
             </select>
+          </div>
+          <div class="field full">
+            <label for="imageUrl">Image URL (Optional - replaces icon)</label>
+            <input type="url" id="imageUrl" class="input" placeholder="https://example.com/image.jpg">
+            <small style="color:var(--muted);font-size:0.8rem;margin-top:0.3rem;display:block;">Add image URL to display as course card background instead of icon</small>
           </div>
           <div class="field full">
             <label for="name">Name</label>

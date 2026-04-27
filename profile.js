@@ -4,10 +4,10 @@ import {
   signOut, onAuthStateChanged, updateProfile
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  doc, setDoc, getDoc, updateDoc, collection, query, orderBy,
-  limit, getDocs, serverTimestamp, deleteDoc
+  doc, setDoc, getDoc, collection, query, orderBy,
+  limit, getDocs, serverTimestamp, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { initShellNavigation, formatDate, escapeHtml, initRevealAnimations } from "./ui.js";
+import { initShellNavigation, escapeHtml, initRevealAnimations } from "./ui.js";
 import { initNotifications } from "./notifications.js";
 
 initShellNavigation();
@@ -15,8 +15,45 @@ initNotifications();
 initRevealAnimations();
 
 const auth = getAuth(app);
+const redirectAfterLogin = new URLSearchParams(window.location.search).get("redirect");
+let enrolledCoursesUnsubscribe = null;
 
-// ── DOM refs ──
+function timeAgo(timestamp) {
+  if (!timestamp) return "Never";
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const seconds = Math.floor((new Date() - date) / 1000);
+  const intervals = {
+    year: 31536000,
+    month: 2592000,
+    week: 604800,
+    day: 86400,
+    hour: 3600,
+    minute: 60
+  };
+
+  for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+    const interval = Math.floor(seconds / secondsInUnit);
+    if (interval >= 1) return `${interval} ${unit}${interval > 1 ? "s" : ""} ago`;
+  }
+
+  return "Just now";
+}
+
+function canRedirectToLocalPage(target) {
+  if (!target || typeof target !== "string") return false;
+  if (target.startsWith("http://") || target.startsWith("https://") || target.startsWith("//")) return false;
+  if (target.startsWith("profile.html")) return false;
+  return true;
+}
+
+function clearEnrollmentSubscription() {
+  if (typeof enrolledCoursesUnsubscribe === "function") {
+    enrolledCoursesUnsubscribe();
+    enrolledCoursesUnsubscribe = null;
+  }
+}
+
+// -- DOM refs --
 const authSection    = document.getElementById("authSection");
 const profileSection = document.getElementById("profileSection");
 
@@ -24,21 +61,26 @@ const profileSection = document.getElementById("profileSection");
 authSection.style.display    = "none";
 profileSection.style.display = "none";
 
-// ── Auth state ──
+// -- Auth state --
 onAuthStateChanged(auth, async user => {
   if (user) {
+    if (canRedirectToLocalPage(redirectAfterLogin)) {
+      window.location.href = redirectAfterLogin;
+      return;
+    }
     authSection.style.display    = "none";
     profileSection.style.display = "block";
     await loadProfile(user);
     initRevealAnimations();
   } else {
+    clearEnrollmentSubscription();
     authSection.style.display    = "block";
     profileSection.style.display = "none";
     initRevealAnimations();
   }
 });
 
-// ── Tab switch (Login / Signup) ──
+// -- Tab switch (Login / Signup) --
 document.querySelectorAll(".auth-tab").forEach(tab => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".auth-tab").forEach(t => t.classList.remove("active"));
@@ -59,7 +101,7 @@ function showError(id, msg) {
   if (el) el.textContent = msg;
 }
 
-// ── Signup ──
+// -- Signup --
 document.getElementById("signupBtn").addEventListener("click", async () => {
   const name  = document.getElementById("signupName").value.trim();
   const phone  = document.getElementById("signupPhone").value.trim();
@@ -87,7 +129,7 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
   }
 });
 
-// ── Login ──
+// -- Login --
 document.getElementById("loginBtn").addEventListener("click", async () => {
   const email = document.getElementById("loginEmail").value.trim();
   const pass  = document.getElementById("loginPass").value;
@@ -104,12 +146,12 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   }
 });
 
-// ── Logout ──
+// -- Logout --
 document.getElementById("logoutBtn").addEventListener("click", async () => {
   await signOut(auth);
 });
 
-// ── Friendly error messages ──
+// -- Friendly error messages --
 function friendlyError(code) {
   const map = {
     "auth/email-already-in-use": "This email is already registered.",
@@ -123,41 +165,122 @@ function friendlyError(code) {
   return map[code] || "Something went wrong. Please try again.";
 }
 
-// ── Load Profile ──
+// -- Load Profile --
 async function loadProfile(user) {
   const name = user.displayName || user.email.split("@")[0];
   const initials = name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
   document.getElementById("profileAvatar").textContent = initials;
   document.getElementById("profileName").textContent   = name;
-  document.getElementById("profileEmail").textContent  = "✉ " + user.email;
+  document.getElementById("profileEmail").textContent  = "Email: " + user.email;
   document.getElementById("profileUid").textContent    = user.uid;
   document.getElementById("profileJoined").textContent = user.metadata.creationTime
-    ? "📅 Joined " + new Date(user.metadata.creationTime).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })
+    ? "Joined " + new Date(user.metadata.creationTime).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })
     : "";
 
-  // Firestore se phone fetch karo
   try {
     const snap = await getDoc(doc(db, "users", user.uid));
     if (snap.exists() && snap.data().phone) {
-      document.getElementById("profilePhone").textContent = "📱 " + snap.data().phone;
+      document.getElementById("profilePhone").textContent = "Phone: " + snap.data().phone;
+    } else {
+      document.getElementById("profilePhone").textContent = "";
     }
-  } catch {}
+  } catch {
+    document.getElementById("profilePhone").textContent = "";
+  }
 
-  // Copy UID button
-  document.getElementById("copyUidBtn").addEventListener("click", () => {
+  document.getElementById("copyUidBtn").onclick = () => {
     navigator.clipboard.writeText(user.uid).then(() => {
       const btn = document.getElementById("copyUidBtn");
-      btn.textContent = "✓ Copied";
+      btn.textContent = "Copied";
       setTimeout(() => btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`, 2000);
     });
-  });
+  };
 
   await loadHistory(user.uid, 20, false);
   await loadStats(user.uid);
+  subscribeEnrolledCourses(user.uid);
 }
 
-// ── Load History ──
+function renderEnrolledCourses(courses) {
+  const grid = document.getElementById("enrolledCoursesGrid");
+  const countBadge = document.getElementById("enrolledCount");
+  if (!grid || !countBadge) return;
+
+  if (!courses.length) {
+    grid.innerHTML = `
+      <div class="empty-enrolled">
+        <div class="empty-enrolled-icon">Courses</div>
+        <h3>No Enrolled Courses Yet</h3>
+        <p>Start your learning journey by enrolling in courses.</p>
+        <a href="learning.html" class="btn btn-primary">Browse Courses</a>
+      </div>
+    `;
+    countBadge.textContent = "0 courses";
+    return;
+  }
+
+  countBadge.textContent = `${courses.length} course${courses.length > 1 ? "s" : ""}`;
+  grid.className = "enrolled-courses-grid";
+  grid.innerHTML = courses.map((course) => {
+    const progress = Math.max(0, Math.min(100, Math.round(Number(course.progress || 0))));
+    const completed = Number(course.completedExercises || 0);
+    const total = Number(course.totalExercises || 0);
+    const lastAccessed = timeAgo(course.lastAccessedAt);
+    return `
+      <article class="enrolled-course-card">
+        <div class="enrolled-course-header">
+          <div class="enrolled-course-icon">${escapeHtml(course.courseIcon || "C")}</div>
+          <div class="enrolled-course-info">
+            <h3 class="enrolled-course-name">${escapeHtml(course.courseName || "Untitled Course")}</h3>
+            <p class="enrolled-course-category">${escapeHtml(course.categoryName || "Category")}</p>
+          </div>
+        </div>
+        <div class="enrolled-course-progress">
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" style="width: ${progress}%"></div>
+          </div>
+          <div class="progress-text">
+            <span>${completed}/${total} exercises</span>
+            <span class="progress-percentage">${progress}%</span>
+          </div>
+        </div>
+        <div class="enrolled-course-footer">
+          <span class="last-accessed">${lastAccessed}</span>
+          <a href="exercises.html?category=${encodeURIComponent(course.categoryId || "")}&course=${encodeURIComponent(course.courseId || "")}" class="continue-btn">Continue</a>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderEnrolledCoursesError() {
+  const grid = document.getElementById("enrolledCoursesGrid");
+  if (!grid) return;
+  grid.innerHTML = `
+    <div class="empty-enrolled">
+      <div class="empty-enrolled-icon">Error</div>
+      <h3>Error Loading Courses</h3>
+      <p>Failed to load your enrolled courses. Please try again.</p>
+    </div>
+  `;
+}
+
+function subscribeEnrolledCourses(uid) {
+  clearEnrollmentSubscription();
+
+  const enrollmentsRef = collection(db, "users", uid, "enrollments");
+  const enrollmentsQuery = query(enrollmentsRef, orderBy("lastAccessedAt", "desc"));
+  enrolledCoursesUnsubscribe = onSnapshot(enrollmentsQuery, (snapshot) => {
+    const courses = snapshot.docs.map((snapshotDoc) => ({ id: snapshotDoc.id, ...snapshotDoc.data() }));
+    renderEnrolledCourses(courses);
+  }, (error) => {
+    console.error("Error loading enrolled courses:", error);
+    renderEnrolledCoursesError();
+  });
+}
+
+// -- Load History --
 async function loadHistory(uid, maxItems, showAll) {
   const histRef = collection(db, "users", uid, "history");
   const q = query(histRef, orderBy("viewedAt", "desc"), limit(showAll ? 100 : maxItems));
@@ -182,14 +305,16 @@ async function loadHistory(uid, maxItems, showAll) {
 function renderHistory(items, total) {
   const grid = document.getElementById("historyGrid");
   const typeLabel = { all:"All", articles:"Articles", tips:"Tips", facts:"Facts", projects:"Projects", resources:"Resources" };
-  const typeIcon  = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗" };
+  const typeIcon  = { articles:"ART", tips:"TIP", facts:"FACT", projects:"PRJ", resources:"RES" };
   const typeColor = { articles:"rgba(95,142,255,.1)", tips:"rgba(60,200,167,.1)", facts:"rgba(255,178,72,.1)", projects:"rgba(139,92,246,.1)", resources:"rgba(6,182,212,.1)" };
   const textColor = { articles:"var(--brand-2)", tips:"#0d6e55", facts:"#7a4800", projects:"#4c1d95", resources:"#0e7490" };
   const bannerMap = { articles:"banner-article", tips:"banner-tip", facts:"banner-fact", projects:"banner-project", resources:"banner-resource" };
 
   const label = typeLabel[activeFilter] || "All";
-  document.querySelector(".history-head h2").innerHTML =
-    `📖 ${label} History <span class="badge badge-muted">${total} items</span>`;
+  const historyHeading = document.getElementById("historyGrid")?.closest(".history-section")?.querySelector(".history-head h2");
+  if (historyHeading) {
+    historyHeading.innerHTML = `${label} History <span class="badge badge-muted" id="historyCount">${total} items</span>`;
+  }
 
   if (!items.length) {
     grid.innerHTML = `<div class="state-box" style="min-width:100%;text-align:center">Koi history nahi mili.</div>`;
@@ -197,7 +322,7 @@ function renderHistory(items, total) {
   }
 
   grid.innerHTML = items.map(item => {
-    const icon = typeIcon[item.type] || "📄";
+    const icon = typeIcon[item.type] || "ITEM";
     const bg   = typeColor[item.type] || "rgba(95,142,255,.1)";
     const col  = textColor[item.type] || "var(--brand-2)";
     const date = item.viewedAt?.toDate
@@ -217,13 +342,13 @@ function renderHistory(items, total) {
       <div class="h-card-content">
         <span class="h-badge" style="background:${bg};color:${col};border-color:${col}20">${escapeHtml(item.type)}</span>
         <span class="h-title">${escapeHtml(item.title || "Untitled")}</span>
-        <span class="h-meta">📅 ${date}</span>
+        <span class="h-meta">Date ${date}</span>
       </div>
     </a>`;
   }).join("");
 }
 
-// ── Load Stats ──
+// -- Load Stats --
 let allHistoryItems = [];
 let activeFilter = "all";
 
@@ -242,11 +367,11 @@ async function loadStats(uid) {
   document.getElementById("statResources").textContent = counts.resources;
   document.getElementById("statTotal").textContent     = allHistoryItems.length;
 
-  // Stat card click → filter history
+  // Stat card click ? filter history
   document.querySelectorAll(".stat-card[data-filter]").forEach(card => {
     card.addEventListener("click", () => {
       const filter = card.dataset.filter;
-      // Same card dobara click → reset to all
+      // Same card dobara click ? reset to all
       activeFilter = (activeFilter === filter && filter !== "all") ? "all" : filter;
       // Active highlight
       document.querySelectorAll(".stat-card[data-filter]").forEach(c =>
@@ -261,7 +386,7 @@ async function loadStats(uid) {
   });
 }
 
-// ── Record history (called from read.js) ──
+// -- Record history (called from read.js) --
 export async function recordHistory({ uid, contentId, type, title, category }) {
   if (!uid || !contentId) return;
   try {
@@ -272,5 +397,5 @@ export async function recordHistory({ uid, contentId, type, title, category }) {
   } catch {}
 }
 
-// ── Expose auth for read.js ──
+// -- Expose auth for read.js --
 export { auth, onAuthStateChanged };

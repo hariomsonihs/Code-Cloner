@@ -60,6 +60,70 @@
     .h-chip .hc-date { font-size: .7rem; color: var(--muted); }
     .edit-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--line); }
     .edit-row .input { flex: 1; min-width: 160px; }
+    .enroll-manage-wrap {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+    }
+    .enroll-manage-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-bottom: .6rem;
+    }
+    .enroll-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+      margin-bottom: .7rem;
+    }
+    .enroll-controls .select {
+      min-width: 240px;
+      flex: 1;
+    }
+    .enroll-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: .55rem;
+    }
+    .enroll-card {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: 12px;
+      padding: .62rem .68rem;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+    .enroll-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .4rem;
+    }
+    .enroll-title {
+      font-size: .82rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin: 0;
+    }
+    .enroll-meta {
+      margin: 0;
+      font-size: .72rem;
+      color: var(--muted);
+    }
+    .enroll-progress {
+      font-size: .72rem;
+      color: var(--muted);
+      margin: 0;
+    }
+    .enroll-actions {
+      display: flex;
+      gap: .4rem;
+      flex-wrap: wrap;
+    }
   </style>
 </head>
 <body class="admin-root">
@@ -128,6 +192,22 @@
         <button class="btn btn-danger btn-sm" id="clearHistoryBtn" style="margin-top:.8rem">🗑 Clear All History</button>
       </div>
 
+      <!-- Enrolled Courses Management -->
+      <div class="enroll-manage-wrap">
+        <div class="enroll-manage-head">
+          <strong style="font-size:.88rem">Learning Enrollments</strong>
+          <span class="badge badge-blue" id="enrollCountBadge">0 enrolled</span>
+        </div>
+        <div class="enroll-controls">
+          <select class="select" id="enrollCourseSelect">
+            <option value="">Select live course to add...</option>
+          </select>
+          <button class="btn btn-primary btn-sm" id="addEnrollBtn">Add Course</button>
+          <button class="btn btn-soft btn-sm" id="refreshCoursesBtn">Refresh Live Courses</button>
+        </div>
+        <div class="enroll-list" id="enrollList"></div>
+      </div>
+
       <!-- Edit Details -->
       <div class="edit-row">
         <input class="input" id="editName"  placeholder="Update name"/>
@@ -174,47 +254,169 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
   getFirestore, collection, getDocs, getDoc, doc,
-  updateDoc, deleteDoc, query, orderBy, onSnapshot
+  setDoc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 const cfg = window.__env || {};
-const app  = initializeApp(cfg);
-const db   = getFirestore(app);
+const app = initializeApp(cfg);
+const db = getFirestore(app);
 const auth = getAuth(app);
 
-onAuthStateChanged(auth, user => {
-  if (!user) { window.location.href = "index.html"; return; }
-  document.getElementById("userEmail").textContent = user.email;
-  document.getElementById("userAvatar").textContent = user.email[0].toUpperCase();
-  document.body.classList.add("ready");
-  loadUsers();
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("sidebarOverlay");
+document.getElementById("hamburger").addEventListener("click", () => {
+  sidebar.classList.toggle("open");
+  overlay.classList.toggle("show");
 });
-document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth).then(() => location.href = "index.html"));
+overlay.addEventListener("click", () => {
+  sidebar.classList.remove("open");
+  overlay.classList.remove("show");
+});
 
-// Sidebar
-const sidebar = document.getElementById("sidebar"), overlay = document.getElementById("sidebarOverlay");
-document.getElementById("hamburger").addEventListener("click", () => { sidebar.classList.toggle("open"); overlay.classList.toggle("show"); });
-overlay.addEventListener("click", () => { sidebar.classList.remove("open"); overlay.classList.remove("show"); });
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  signOut(auth).then(() => {
+    window.location.href = "index.html";
+  });
+});
 
-function esc(t) { return String(t ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
+function esc(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function fmtDate(ts) {
-  if (!ts) return "—";
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" });
+  if (!ts) return "-";
+  const date = ts.toDate ? ts.toDate() : new Date(ts);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function toast(msg, type = "success") {
+  let wrap = document.getElementById("tw");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "tw";
+    wrap.className = "toast-wrap";
+    document.body.appendChild(wrap);
+  }
+
+  const iconMap = {
+    success: `<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`,
+    error: `<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>`
+  };
+
+  const item = document.createElement("div");
+  item.className = `toast toast-${type}`;
+  item.innerHTML = (iconMap[type] || "") + esc(msg);
+  wrap.appendChild(item);
+  setTimeout(() => item.remove(), 3200);
 }
 
 let allUsers = [];
-let openUid  = null;
+let openUid = null;
 let allHistory = [];
+let liveCourses = [];
+let enrollmentUnsub = null;
 
-// ── Load all users ──────────────────────────────────────────────────────────
+function clearEnrollmentSubscription() {
+  if (typeof enrollmentUnsub === "function") {
+    enrollmentUnsub();
+    enrollmentUnsub = null;
+  }
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  document.getElementById("userEmail").textContent = user.email || "";
+  document.getElementById("userAvatar").textContent = String(user.email || "A")[0].toUpperCase();
+  document.body.classList.add("ready");
+
+  await Promise.all([loadUsers(), loadLiveCourses()]);
+});
+
 async function loadUsers() {
   const snap = await getDocs(collection(db, "users"));
-  allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
-  document.getElementById("userCount").textContent       = allUsers.length;
-  document.getElementById("totalUsersCount").textContent = allUsers.length + " users";
+  allUsers = snap.docs.map((docSnap) => ({ uid: docSnap.id, ...docSnap.data() }));
+  document.getElementById("userCount").textContent = allUsers.length;
+  document.getElementById("totalUsersCount").textContent = `${allUsers.length} users`;
   renderTable(allUsers);
+}
+
+async function loadLiveCourses() {
+  const select = document.getElementById("enrollCourseSelect");
+  try {
+    const categorySnap = await getDocs(collection(db, "learning_categories"));
+    const rows = [];
+
+    for (const categoryDoc of categorySnap.docs) {
+      const categoryData = categoryDoc.data();
+      const coursesSnap = await getDocs(collection(db, `learning_categories/${categoryDoc.id}/courses`));
+      coursesSnap.docs.forEach((courseDoc) => {
+        const courseData = courseDoc.data();
+        rows.push({
+          categoryId: categoryDoc.id,
+          categoryName: categoryData.name || "Category",
+          courseId: courseDoc.id,
+          courseName: courseData.name || "Untitled Course",
+          courseIcon: courseData.icon || "C",
+          courseDescription: courseData.description || ""
+        });
+      });
+    }
+
+    liveCourses = rows.sort((a, b) => (`${a.categoryName} ${a.courseName}`).localeCompare(`${b.categoryName} ${b.courseName}`));
+    renderLiveCourseOptions();
+  } catch (error) {
+    console.error("Failed to load live courses:", error);
+    select.innerHTML = `<option value="">Failed to load live courses</option>`;
+  }
+}
+
+function renderLiveCourseOptions() {
+  const select = document.getElementById("enrollCourseSelect");
+  if (!select) return;
+
+  select.innerHTML = `<option value="">Select live course to add...</option>`;
+  liveCourses.forEach((course) => {
+    const opt = document.createElement("option");
+    opt.value = `${course.categoryId}__::__${course.courseId}`;
+    opt.textContent = `${course.categoryName} -> ${course.courseName}`;
+    select.appendChild(opt);
+  });
+}
+
+function getSelectedLiveCourse() {
+  const raw = document.getElementById("enrollCourseSelect")?.value || "";
+  if (!raw) return null;
+  const [categoryId, courseId] = raw.split("__::__");
+  return liveCourses.find((course) => course.categoryId === categoryId && course.courseId === courseId) || null;
+}
+
+async function countCourseExercises(categoryId, courseId) {
+  try {
+    const directSnap = await getDocs(collection(db, `learning_categories/${categoryId}/courses/${courseId}/exercises`));
+    if (directSnap.size > 0) return directSnap.size;
+
+    const topicsSnap = await getDocs(collection(db, `learning_categories/${categoryId}/courses/${courseId}/topics`));
+    let total = 0;
+    for (const topicDoc of topicsSnap.docs) {
+      const exercisesSnap = await getDocs(collection(db, `learning_categories/${categoryId}/courses/${courseId}/topics/${topicDoc.id}/exercises`));
+      total += exercisesSnap.size;
+    }
+    return total;
+  } catch (error) {
+    console.error("Failed to count exercises:", error);
+    return 0;
+  }
 }
 
 function renderTable(users) {
@@ -223,115 +425,138 @@ function renderTable(users) {
     tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p>No users found.</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = users.map(u => {
-    const isDisabled = u.disabled || false;
-    const disabledStyle = isDisabled ? 'opacity:0.5;' : '';
-    const disabledBadge = isDisabled ? '<span class="badge badge-danger" style="margin-left:.4rem;font-size:.7rem">🚫 Disabled</span>' : '';
+
+  tbody.innerHTML = users.map((user) => {
+    const isDisabled = Boolean(user.disabled);
+    const disabledStyle = isDisabled ? "opacity:0.5;" : "";
+    const disabledBadge = isDisabled
+      ? '<span class="badge badge-danger" style="margin-left:.4rem;font-size:.7rem">Disabled</span>'
+      : "";
+    const adminBadge = user.isAdmin
+      ? '<span class="badge badge-success" style="margin-left:.4rem;font-size:.7rem">Admin</span>'
+      : "";
+
     return `
-    <tr style="${disabledStyle}">
-      <td>
-        <div style="display:flex;align-items:center;gap:.6rem">
-          <div style="width:34px;height:34px;border-radius:999px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0">
-            ${esc((u.name || u.email || "?")[0].toUpperCase())}
+      <tr style="${disabledStyle}">
+        <td>
+          <div style="display:flex;align-items:center;gap:.6rem">
+            <div style="width:34px;height:34px;border-radius:999px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0">
+              ${esc((user.name || user.email || "?")[0].toUpperCase())}
+            </div>
+            <div>
+              <div class="td-title">${esc(user.name || "-")}${disabledBadge}${adminBadge}</div>
+              <div class="td-muted">${esc(user.email || "")}</div>
+            </div>
           </div>
-          <div>
-            <div class="td-title">${esc(u.name || "—")}${disabledBadge}${u.isAdmin ? '<span class="badge badge-success" style="margin-left:.4rem;font-size:.7rem">⭐ Admin</span>' : ''}</div>
-            <div class="td-muted">${esc(u.email || "")}</div>
+        </td>
+        <td class="td-muted">${esc(user.phone || "-")}</td>
+        <td class="td-muted">${fmtDate(user.createdAt)}</td>
+        <td><span class="badge badge-blue" id="readCount-${user.uid}">...</span></td>
+        <td>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="openUser('${user.uid}')">View</button>
+            <button class="btn ${user.isAdmin ? "btn-danger" : "btn-success"} btn-sm" onclick="toggleAdmin('${user.uid}', ${Boolean(user.isAdmin)})">${user.isAdmin ? "Remove Admin" : "Make Admin"}</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.uid}', '${esc(user.name || user.email || "user")}')">Delete</button>
           </div>
-        </div>
-      </td>
-      <td class="td-muted">${esc(u.phone || "—")}</td>
-      <td class="td-muted">${fmtDate(u.createdAt)}</td>
-      <td><span class="badge badge-blue" id="readCount-${u.uid}">...</span></td>
-      <td>
-        <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" onclick="openUser('${u.uid}')">View</button>
-          <button class="btn ${u.isAdmin ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleAdmin('${u.uid}', ${u.isAdmin || false})">${u.isAdmin ? '❌ Remove Admin' : '✅ Make Admin'}</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.uid}', '${esc(u.name || u.email)}')">Delete</button>
-        </div>
-      </td>
-    </tr>`;
+        </td>
+      </tr>
+    `;
   }).join("");
 
-  // Load read counts async
-  users.forEach(async u => {
+  users.forEach(async (user) => {
     try {
-      const hSnap = await getDocs(collection(db, "users", u.uid, "history"));
-      const el = document.getElementById("readCount-" + u.uid);
-      if (el) el.textContent = hSnap.size + " read";
-    } catch { }
+      const historySnap = await getDocs(collection(db, "users", user.uid, "history"));
+      const countEl = document.getElementById(`readCount-${user.uid}`);
+      if (countEl) countEl.textContent = `${historySnap.size} read`;
+    } catch {
+      // ignore
+    }
   });
 }
 
-// Search
-document.getElementById("searchInput").addEventListener("input", e => {
-  const q = e.target.value.toLowerCase();
-  renderTable(allUsers.filter(u => (u.name + u.email).toLowerCase().includes(q)));
+document.getElementById("searchInput").addEventListener("input", (event) => {
+  const queryText = (event.target.value || "").toLowerCase();
+  const filtered = allUsers.filter((user) => `${user.name || ""} ${user.email || ""}`.toLowerCase().includes(queryText));
+  renderTable(filtered);
 });
 
-// ── Open user detail ────────────────────────────────────────────────────────
 window.openUser = async function(uid) {
   openUid = uid;
-  const u = allUsers.find(x => x.uid === uid);
-  if (!u) return;
+  const user = allUsers.find((item) => item.uid === uid);
+  if (!user) return;
 
   const panel = document.getElementById("userDetailPanel");
   panel.classList.add("open");
   panel.scrollIntoView({ behavior: "smooth", block: "start" });
 
-  const initials = (u.name || u.email || "?").split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
-  const disabledBadge = u.disabled ? '<span class="badge badge-danger" style="margin-left:.5rem;font-size:.75rem">🚫 Disabled</span>' : '';
-  
-  document.getElementById("detailAvatar").textContent = initials;
-  document.getElementById("detailName").innerHTML     = esc(u.name || "—") + disabledBadge;
-  document.getElementById("detailEmail").textContent  = "✉ " + (u.email || "");
-  document.getElementById("detailPhone").textContent  = u.phone ? "📱 " + u.phone : "";
-  document.getElementById("detailJoined").textContent = u.createdAt ? "📅 Joined " + fmtDate(u.createdAt) : "";
-  document.getElementById("detailUid").textContent    = "UID: " + uid;
-  document.getElementById("editName").value  = u.name  || "";
-  document.getElementById("editPhone").value = u.phone || "";
+  const initials = (user.name || user.email || "?")
+    .split(" ")
+    .map((chunk) => chunk[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
-  // Update disable button state
+  const disabledBadge = user.disabled
+    ? '<span class="badge badge-danger" style="margin-left:.5rem;font-size:.75rem">Disabled</span>'
+    : "";
+
+  document.getElementById("detailAvatar").textContent = initials;
+  document.getElementById("detailName").innerHTML = esc(user.name || "-") + disabledBadge;
+  document.getElementById("detailEmail").textContent = `Email: ${user.email || ""}`;
+  document.getElementById("detailPhone").textContent = user.phone ? `Phone: ${user.phone}` : "";
+  document.getElementById("detailJoined").textContent = user.createdAt ? `Joined: ${fmtDate(user.createdAt)}` : "";
+  document.getElementById("detailUid").textContent = `UID: ${uid}`;
+  document.getElementById("editName").value = user.name || "";
+  document.getElementById("editPhone").value = user.phone || "";
+
   const disableBtn = document.getElementById("disableUserBtn");
-  if (u.disabled) {
-    disableBtn.textContent = "✅ Enable User";
+  if (user.disabled) {
+    disableBtn.textContent = "Enable User";
     disableBtn.className = "btn btn-primary btn-sm";
   } else {
-    disableBtn.textContent = "🚫 Disable User";
+    disableBtn.textContent = "Disable User";
     disableBtn.className = "btn btn-soft btn-sm";
   }
 
   await loadUserHistory(uid);
+  subscribeUserEnrollments(uid);
 };
 
 document.getElementById("closeDetailBtn").addEventListener("click", () => {
+  clearEnrollmentSubscription();
   document.getElementById("userDetailPanel").classList.remove("open");
+  document.getElementById("enrollList").innerHTML = "";
+  document.getElementById("enrollCountBadge").textContent = "0 enrolled";
   openUid = null;
 });
 
-// ── Load user history ───────────────────────────────────────────────────────
 async function loadUserHistory(uid, filterType = "all") {
-  const snap = await getDocs(query(collection(db, "users", uid, "history"), orderBy("viewedAt", "desc")));
-  allHistory = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const historySnap = await getDocs(query(collection(db, "users", uid, "history"), orderBy("viewedAt", "desc")));
+  allHistory = historySnap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
 
-  // Stats
-  const types = ["articles","tips","facts","projects","resources"];
+  const types = ["articles", "tips", "facts", "projects", "resources"];
   const counts = {};
-  types.forEach(t => counts[t] = allHistory.filter(h => h.type === t).length);
-  const icons = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗" };
+  types.forEach((type) => {
+    counts[type] = allHistory.filter((item) => item.type === type).length;
+  });
+
+  const icons = { articles: "ART", tips: "TIP", facts: "FACT", projects: "PRJ", resources: "RES" };
 
   document.getElementById("detailStats").innerHTML = `
     <div class="u-stat"><strong>${allHistory.length}</strong><span>Total Read</span></div>
-    ${types.map(t => `<div class="u-stat" style="cursor:pointer" onclick="filterHistory('${t}')">
-      <strong>${counts[t]}</strong><span>${icons[t]} ${t.charAt(0).toUpperCase()+t.slice(1)}</span>
-    </div>`).join("")}`;
+    ${types.map((type) => `<div class="u-stat" style="cursor:pointer" onclick="filterHistory('${type}')"><strong>${counts[type]}</strong><span>${icons[type]} ${type.charAt(0).toUpperCase() + type.slice(1)}</span></div>`).join("")}
+  `;
 
-  // Filter buttons
   document.getElementById("historyFilterBtns").innerHTML = `
-    <button class="btn btn-sm ${filterType==='all'?'btn-primary':'btn-soft'}" onclick="filterHistory('all')">All</button>
-    ${types.map(t => `<button class="btn btn-sm ${filterType===t?'btn-primary':'btn-soft'}" onclick="filterHistory('${t}')">${icons[t]} ${t}</button>`).join("")}`;
+    <button class="btn btn-sm ${filterType === "all" ? "btn-primary" : "btn-soft"}" onclick="filterHistory('all')">All</button>
+    ${types.map((type) => `<button class="btn btn-sm ${filterType === type ? "btn-primary" : "btn-soft"}" onclick="filterHistory('${type}')">${icons[type]} ${type}</button>`).join("")}
+  `;
 
-  renderHistoryChips(filterType === "all" ? allHistory : allHistory.filter(h => h.type === filterType));
+  const visibleItems = filterType === "all"
+    ? allHistory
+    : allHistory.filter((item) => item.type === filterType);
+
+  renderHistoryChips(visibleItems);
 }
 
 window.filterHistory = function(type) {
@@ -341,165 +566,286 @@ window.filterHistory = function(type) {
 
 function renderHistoryChips(items) {
   const container = document.getElementById("detailHistory");
-  const icons = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗" };
+  const icons = { articles: "ART", tips: "TIP", facts: "FACT", projects: "PRJ", resources: "RES" };
+
   if (!items.length) {
     container.innerHTML = `<div class="empty-state" style="min-width:200px;padding:.8rem 1rem">No history found.</div>`;
     return;
   }
-  container.innerHTML = items.map(h => `
-    <a class="h-chip" href="../read.html?type=${h.type}&id=${h.contentId}" target="_blank">
-      <span class="hc-type">${icons[h.type] || "📄"} ${h.type}</span>
-      <span class="hc-title">${esc(h.title || "Untitled")}</span>
-      <span class="hc-date">📅 ${fmtDate(h.viewedAt)}</span>
-    </a>`).join("");
+
+  container.innerHTML = items.map((item) => `
+    <a class="h-chip" href="../read.html?type=${encodeURIComponent(item.type || "")}&id=${encodeURIComponent(item.contentId || "")}" target="_blank" rel="noopener">
+      <span class="hc-type">${icons[item.type] || "ITEM"} ${esc(item.type || "unknown")}</span>
+      <span class="hc-title">${esc(item.title || "Untitled")}</span>
+      <span class="hc-date">Date: ${fmtDate(item.viewedAt)}</span>
+    </a>
+  `).join("");
 }
 
-// ── Clear history ───────────────────────────────────────────────────────────
+function renderEnrollments(items) {
+  const list = document.getElementById("enrollList");
+  const badge = document.getElementById("enrollCountBadge");
+  badge.textContent = `${items.length} enrolled`;
+
+  if (!items.length) {
+    list.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:.8rem 1rem">No enrolled courses for this user.</div>`;
+    return;
+  }
+
+  list.innerHTML = items.map((course) => {
+    const progress = Number(course.progress || 0);
+    const completed = Number(course.completedExercises || 0);
+    const total = Number(course.totalExercises || 0);
+    const courseId = String(course.courseId || course.id || "");
+    const courseIdToken = encodeURIComponent(courseId);
+    const openUrl = `../exercises.html?category=${encodeURIComponent(course.categoryId || "")}&course=${encodeURIComponent(course.courseId || "")}`;
+
+    return `
+      <article class="enroll-card">
+        <div class="enroll-card-top">
+          <p class="enroll-title">${esc(course.courseIcon || "C")} ${esc(course.courseName || "Untitled Course")}</p>
+          <button class="btn btn-danger btn-sm" onclick="removeEnrollment('${courseIdToken}')">Remove</button>
+        </div>
+        <p class="enroll-meta">${esc(course.categoryName || "Category")}</p>
+        <p class="enroll-progress">${completed}/${total} exercises | ${progress}% progress</p>
+        <div class="enroll-actions">
+          <a class="btn btn-soft btn-sm" href="${openUrl}" target="_blank" rel="noopener">Open Course</a>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function subscribeUserEnrollments(uid) {
+  clearEnrollmentSubscription();
+
+  const enrollmentQuery = query(collection(db, "users", uid, "enrollments"), orderBy("lastAccessedAt", "desc"));
+  enrollmentUnsub = onSnapshot(enrollmentQuery, (snapshot) => {
+    const items = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+    renderEnrollments(items);
+  }, (error) => {
+    console.error("Enrollments listener error:", error);
+    toast("Failed to load enrollments", "error");
+  });
+}
+
+document.getElementById("refreshCoursesBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("refreshCoursesBtn");
+  btn.disabled = true;
+  btn.textContent = "Refreshing...";
+  await loadLiveCourses();
+  btn.disabled = false;
+  btn.textContent = "Refresh Live Courses";
+});
+
+document.getElementById("addEnrollBtn").addEventListener("click", async () => {
+  if (!openUid) return toast("Open a user profile first", "error");
+
+  const selectedCourse = getSelectedLiveCourse();
+  if (!selectedCourse) return toast("Select a course to enroll", "error");
+
+  const btn = document.getElementById("addEnrollBtn");
+  btn.disabled = true;
+  btn.textContent = "Adding...";
+
+  try {
+    const enrollmentRef = doc(db, "users", openUid, "enrollments", selectedCourse.courseId);
+    const existingSnap = await getDoc(enrollmentRef);
+    const existingData = existingSnap.exists() ? existingSnap.data() : {};
+    const totalExercises = await countCourseExercises(selectedCourse.categoryId, selectedCourse.courseId);
+
+    const completedExercises = Number(existingData.completedExercises || 0);
+    const progress = totalExercises > 0
+      ? Math.min(100, Math.round((completedExercises / totalExercises) * 100))
+      : 0;
+
+    await setDoc(enrollmentRef, {
+      categoryId: selectedCourse.categoryId,
+      categoryName: selectedCourse.categoryName,
+      courseId: selectedCourse.courseId,
+      courseName: selectedCourse.courseName,
+      courseIcon: selectedCourse.courseIcon,
+      courseDescription: selectedCourse.courseDescription,
+      enrolledAt: existingData.enrolledAt || serverTimestamp(),
+      lastAccessedAt: serverTimestamp(),
+      progress,
+      completedExercises,
+      totalExercises,
+      status: "active"
+    }, { merge: true });
+
+    toast("Course enrolled for user successfully");
+  } catch (error) {
+    console.error(error);
+    toast(`Failed to add enrollment: ${error.message || "Unknown error"}`, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Add Course";
+  }
+});
+
+window.removeEnrollment = async function(courseIdToken) {
+  if (!openUid) return;
+  if (!confirm("Remove this course enrollment from user?")) return;
+
+  try {
+    const courseId = decodeURIComponent(String(courseIdToken || ""));
+    await deleteDoc(doc(db, "users", openUid, "enrollments", courseId));
+    toast("Enrollment removed");
+  } catch (error) {
+    console.error(error);
+    toast(`Failed to remove enrollment: ${error.message || "Unknown error"}`, "error");
+  }
+};
+
 document.getElementById("clearHistoryBtn").addEventListener("click", async () => {
   if (!openUid || !confirm("Is user ki poori reading history delete karein?")) return;
   const snap = await getDocs(collection(db, "users", openUid, "history"));
-  await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
-  toast("History cleared ✓");
+  await Promise.all(snap.docs.map((docSnap) => deleteDoc(docSnap.ref)));
+  toast("History cleared successfully");
   await loadUserHistory(openUid);
 });
 
-// ── Save edits ──────────────────────────────────────────────────────────────
 document.getElementById("saveEditBtn").addEventListener("click", async () => {
   if (!openUid) return;
-  const name  = document.getElementById("editName").value.trim();
+
+  const name = document.getElementById("editName").value.trim();
   const phone = document.getElementById("editPhone").value.trim();
+
   try {
     await updateDoc(doc(db, "users", openUid), { name, phone });
-    // Update local cache
-    const u = allUsers.find(x => x.uid === openUid);
-    if (u) { u.name = name; u.phone = phone; }
-    document.getElementById("detailName").textContent  = name || "—";
-    document.getElementById("detailPhone").textContent = phone ? "📱 " + phone : "";
+    const user = allUsers.find((item) => item.uid === openUid);
+    if (user) {
+      user.name = name;
+      user.phone = phone;
+    }
+
+    document.getElementById("detailName").textContent = name || "-";
+    document.getElementById("detailPhone").textContent = phone ? `Phone: ${phone}` : "";
     renderTable(allUsers);
-    toast("User updated ✓");
-  } catch(e) { toast("Error: " + e.message, "error"); }
+    toast("User updated successfully");
+  } catch (error) {
+    console.error(error);
+    toast(`Error: ${error.message}`, "error");
+  }
 });
 
-// ── Delete user from detail panel ───────────────────────────────────────────
+async function deleteUserSubcollection(uid, subcollectionName) {
+  const snap = await getDocs(collection(db, "users", uid, subcollectionName));
+  await Promise.all(snap.docs.map((docSnap) => deleteDoc(docSnap.ref)));
+}
+
 document.getElementById("deleteUserBtn").addEventListener("click", async () => {
   if (!openUid) return;
-  const u = allUsers.find(x => x.uid === openUid);
-  const name = u?.name || u?.email || "this user";
-  if (!confirm(`⚠️ WARNING: Delete ${name}?\n\nFirestore data delete hoga:\n• User document\n• Reading history\n\nAuthentication account manually Firebase Console se delete karein.\n\nContinue?`)) return;
-  
+
+  const user = allUsers.find((item) => item.uid === openUid);
+  const name = user?.name || user?.email || "this user";
+  if (!confirm(`WARNING: Delete ${name}?\n\nFirestore data delete hoga:\n- User document\n- Reading history\n- Enrollments\n\nAuthentication account manually Firebase Console se delete karein.\n\nContinue?`)) return;
+
   const btn = document.getElementById("deleteUserBtn");
   btn.disabled = true;
   btn.textContent = "Deleting...";
-  
+
   try {
-    const hSnap = await getDocs(collection(db, "users", openUid, "history"));
-    await Promise.all(hSnap.docs.map(d => deleteDoc(d.ref)));
+    await deleteUserSubcollection(openUid, "history");
+    await deleteUserSubcollection(openUid, "enrollments");
     await deleteDoc(doc(db, "users", openUid));
-    
-    allUsers = allUsers.filter(x => x.uid !== openUid);
+
+    allUsers = allUsers.filter((item) => item.uid !== openUid);
+    clearEnrollmentSubscription();
     document.getElementById("userDetailPanel").classList.remove("open");
     openUid = null;
+
     renderTable(allUsers);
     document.getElementById("userCount").textContent = allUsers.length;
-    document.getElementById("totalUsersCount").textContent = allUsers.length + " users";
-    
-    toast("User data deleted ✓");
-  } catch(e) { 
-    console.error(e);
-    toast("Error: " + (e.message || "Failed to delete"), "error");
+    document.getElementById("totalUsersCount").textContent = `${allUsers.length} users`;
+    toast("User data deleted successfully");
+  } catch (error) {
+    console.error(error);
+    toast(`Error: ${error.message || "Failed to delete"}`, "error");
   } finally {
     btn.disabled = false;
-    btn.textContent = "🗑 Delete User Data";
+    btn.textContent = "Delete User Data";
   }
 });
 
-// ── Disable user ────────────────────────────────────────────────────────────
 document.getElementById("disableUserBtn").addEventListener("click", async () => {
   if (!openUid) return;
-  const u = allUsers.find(x => x.uid === openUid);
-  const isDisabled = u?.disabled || false;
+
+  const user = allUsers.find((item) => item.uid === openUid);
+  const isDisabled = Boolean(user?.disabled);
   const action = isDisabled ? "Enable" : "Disable";
-  
-  if (!confirm(`${action} user: ${u?.name || u?.email}?`)) return;
-  
+  if (!confirm(`${action} user: ${user?.name || user?.email}?`)) return;
+
   const btn = document.getElementById("disableUserBtn");
   btn.disabled = true;
   btn.textContent = isDisabled ? "Enabling..." : "Disabling...";
-  
+
   try {
     await updateDoc(doc(db, "users", openUid), { disabled: !isDisabled });
-    
-    if (u) u.disabled = !isDisabled;
-    
-    btn.textContent = isDisabled ? "🚫 Disable User" : "✅ Enable User";
+    if (user) user.disabled = !isDisabled;
+
+    btn.textContent = isDisabled ? "Disable User" : "Enable User";
     btn.className = isDisabled ? "btn btn-soft btn-sm" : "btn btn-primary btn-sm";
-    
-    const disabledBadge = !isDisabled ? '<span class="badge badge-danger" style="margin-left:.5rem;font-size:.75rem">🚫 Disabled</span>' : '';
-    document.getElementById("detailName").innerHTML = esc(u.name || "—") + disabledBadge;
-    
+
+    const disabledBadge = !isDisabled
+      ? '<span class="badge badge-danger" style="margin-left:.5rem;font-size:.75rem">Disabled</span>'
+      : "";
+    document.getElementById("detailName").innerHTML = esc(user?.name || "-") + disabledBadge;
     renderTable(allUsers);
-    toast(`User ${isDisabled ? 'enabled' : 'disabled'} ✓`);
-  } catch(e) { 
-    console.error(e);
-    toast("Error: " + (e.message || "Failed"), "error");
+    toast(`User ${isDisabled ? "enabled" : "disabled"} successfully`);
+  } catch (error) {
+    console.error(error);
+    toast(`Error: ${error.message || "Failed"}`, "error");
   } finally {
     btn.disabled = false;
   }
 });
 
-// ── Delete user from table ──────────────────────────────────────────────────
 window.deleteUser = async function(uid, name) {
-  if (!confirm(`⚠️ Delete ${name}?\n\nFirestore data delete hoga.\nAuthentication account manually Firebase Console se delete karein.\n\nContinue?`)) return;
-  
+  if (!confirm(`Delete ${name}?\n\nFirestore data delete hoga including history and enrollments.\nAuthentication account manually Firebase Console se delete karein.\n\nContinue?`)) return;
+
   try {
-    const hSnap = await getDocs(collection(db, "users", uid, "history"));
-    await Promise.all(hSnap.docs.map(d => deleteDoc(d.ref)));
+    await deleteUserSubcollection(uid, "history");
+    await deleteUserSubcollection(uid, "enrollments");
     await deleteDoc(doc(db, "users", uid));
-    
-    allUsers = allUsers.filter(x => x.uid !== uid);
+
+    allUsers = allUsers.filter((item) => item.uid !== uid);
     renderTable(allUsers);
     document.getElementById("userCount").textContent = allUsers.length;
-    document.getElementById("totalUsersCount").textContent = allUsers.length + " users";
-    
-    toast("User data deleted ✓");
-  } catch(e) { 
-    console.error(e);
-    toast("Error: " + (e.message || "Failed"), "error"); 
+    document.getElementById("totalUsersCount").textContent = `${allUsers.length} users`;
+
+    if (openUid === uid) {
+      clearEnrollmentSubscription();
+      document.getElementById("userDetailPanel").classList.remove("open");
+      openUid = null;
+    }
+
+    toast("User data deleted successfully");
+  } catch (error) {
+    console.error(error);
+    toast(`Error: ${error.message || "Failed"}`, "error");
   }
 };
 
-// Toggle Admin Role
 window.toggleAdmin = async function(uid, currentIsAdmin) {
-  const u = allUsers.find(x => x.uid === uid);
-  const name = u?.name || u?.email || "this user";
+  const user = allUsers.find((item) => item.uid === uid);
+  const name = user?.name || user?.email || "this user";
   const action = currentIsAdmin ? "Remove admin access from" : "Grant admin access to";
-  
-  if (!confirm(`${action} ${name}?\n\n${currentIsAdmin ? '⚠️ User will lose admin panel access.' : '✅ User will be able to access admin panel.'}`)) return;
-  
+
+  if (!confirm(`${action} ${name}?`)) return;
+
   try {
     await updateDoc(doc(db, "users", uid), { isAdmin: !currentIsAdmin });
-    
-    if (u) u.isAdmin = !currentIsAdmin;
-    
+    if (user) user.isAdmin = !currentIsAdmin;
     renderTable(allUsers);
-    toast(`${currentIsAdmin ? 'Admin access removed' : 'Admin access granted'} ✓`);
-  } catch(e) { 
-    console.error(e);
-    toast("Error: " + (e.message || "Failed"), "error"); 
+    toast(currentIsAdmin ? "Admin access removed" : "Admin access granted");
+  } catch (error) {
+    console.error(error);
+    toast(`Error: ${error.message || "Failed"}`, "error");
   }
 };
-
-// ── Toast ───────────────────────────────────────────────────────────────────
-function toast(msg, type = "success") {
-  let w = document.getElementById("tw");
-  if (!w) { w = document.createElement("div"); w.id = "tw"; w.className = "toast-wrap"; document.body.appendChild(w); }
-  const icons = { success:`<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`, error:`<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>` };
-  const el = document.createElement("div");
-  el.className = `toast toast-${type}`;
-  el.innerHTML = (icons[type] || "") + msg;
-  w.appendChild(el);
-  setTimeout(() => el.remove(), 3200);
-}
 </script>
 </body>
 </html>
+

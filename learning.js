@@ -90,7 +90,6 @@ async function loadCategories() {
     // Update stats
     document.getElementById('totalCategories').textContent = categoryDocs.length;
     document.getElementById('totalCourses').textContent = totalCourses;
-    document.getElementById('totalExercises').textContent = totalExercises;
 
     console.log('Categories loaded successfully!');
 

@@ -241,6 +241,157 @@
         width: fit-content;
       }
 
+      /* Enrolled Courses */
+      .enrolled-courses-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+      .enrolled-course-card {
+        background: var(--surface-strong);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        padding: 1.2rem;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+      }
+      .enrolled-course-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #5f83ff, #3cc8a7);
+      }
+      .enrolled-course-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(95, 142, 255, 0.15);
+        border-color: rgba(95, 142, 255, 0.35);
+      }
+      .enrolled-course-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.8rem;
+      }
+      .enrolled-course-icon {
+        font-size: 2rem;
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(95, 131, 255, 0.1), rgba(60, 200, 167, 0.1));
+        border-radius: 12px;
+        border: 1px solid rgba(95, 131, 255, 0.2);
+        flex-shrink: 0;
+      }
+      .enrolled-course-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .enrolled-course-name {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0 0.3rem;
+        color: var(--text);
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .enrolled-course-category {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin: 0;
+      }
+      .enrolled-course-progress {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+      .progress-bar-container {
+        width: 100%;
+        height: 6px;
+        background: rgba(95, 131, 255, 0.1);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #5f83ff, #3cc8a7);
+        border-radius: 999px;
+        transition: width 0.3s ease;
+      }
+      .progress-text {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .progress-percentage {
+        font-weight: 600;
+        color: var(--brand-2);
+      }
+      .enrolled-course-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 0.8rem;
+        border-top: 1px solid var(--line);
+      }
+      .last-accessed {
+        font-size: 0.75rem;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+      .continue-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.9rem;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #5f83ff, #3cc8a7);
+        color: white;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+      .continue-btn:hover {
+        transform: translateX(3px);
+        box-shadow: 0 4px 12px rgba(95, 131, 255, 0.3);
+      }
+      .empty-enrolled {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--muted);
+      }
+      .empty-enrolled-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+      .empty-enrolled h3 {
+        margin: 0 0 0.5rem;
+        font-size: 1.1rem;
+        color: var(--text);
+      }
+      .empty-enrolled p {
+        margin: 0 0 1.5rem;
+        font-size: 0.9rem;
+      }
+
       @media (max-width: 600px) {
         .stats-grid { grid-template-columns: repeat(2, 1fr); }
         #historyGrid { grid-template-columns: 1fr 1fr; }
@@ -406,6 +557,22 @@
           </div>
           <div class="stat-card" id="statCard-resources" data-filter="resources" style="cursor:pointer">
             <span class="stat-num" id="statResources">0</span><div class="stat-label">🔗 Resources</div>
+          </div>
+        </div>
+
+        <!-- Enrolled Courses Section -->
+        <div class="enrolled-section reveal" style="margin-top: 1.2rem;">
+          <div class="history-section" style="margin-top: 0;">
+            <div class="history-head">
+              <h2 style="display: flex; align-items: center; gap: 0.5rem;">
+                📚 My Enrolled Courses
+                <span class="badge badge-blue" id="enrolledCount">0 courses</span>
+              </h2>
+              <a href="learning.html" style="display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.38rem 0.85rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-strong); font-size: 0.82rem; font-weight: 600; cursor: pointer; color: var(--brand-2); transition: 0.2s; text-decoration: none;">
+                Browse Courses →
+              </a>
+            </div>
+            <div id="enrolledCoursesGrid"></div>
           </div>
         </div>
 

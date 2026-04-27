@@ -1,14 +1,27 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import { getFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const firebaseConfig = window.__env || {};
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 const urlParams = new URLSearchParams(window.location.search);
 const categoryId = urlParams.get('category');
 const courseId = urlParams.get('course');
 let exerciseParam = urlParams.get('exercise') || urlParams.get('id');
+let currentUser = null;
+let courseDetails = {
+  categoryName: '',
+  courseName: '',
+  courseDescription: '',
+  courseIcon: 'C'
+};
+let enrollmentCheckState = {
+  uid: '',
+  exists: false
+};
 
 let allExercises = [];
 let currentIndex = 0;
@@ -36,6 +49,26 @@ function sortDocsByOrder(docs) {
 
 function buildExerciseUrl(exerciseUrlId) {
   return `exercise.html?category=${categoryId}&course=${courseId}&exercise=${encodeURIComponent(exerciseUrlId)}`;
+}
+
+function getExercisesPageUrl(extraQuery = '') {
+  const base = `exercises.html?category=${encodeURIComponent(categoryId)}&course=${encodeURIComponent(courseId)}`;
+  if (!extraQuery) return base;
+  return `${base}&${extraQuery}`;
+}
+
+function getCurrentExerciseRedirectUrl() {
+  const redirectExercise = exerciseParam ? `&exercise=${encodeURIComponent(exerciseParam)}` : '';
+  return `exercise.html?category=${encodeURIComponent(categoryId)}&course=${encodeURIComponent(courseId)}${redirectExercise}`;
+}
+
+function getCurrentUserOnce() {
+  return new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
 }
 
 function loadCompletedExerciseKeys() {
@@ -75,17 +108,114 @@ function isExerciseCompleted(exercise) {
   return legacy ? completedExerciseKeys.has(legacy) : false;
 }
 
+function getCourseProgressSnapshot() {
+  const totalExercises = allExercises.length;
+  const completedExercises = allExercises.filter((exercise) => isExerciseCompleted(exercise)).length;
+  const progress = totalExercises > 0
+    ? Math.min(100, Math.round((completedExercises / totalExercises) * 100))
+    : 0;
+
+  return {
+    completedExercises,
+    totalExercises,
+    progress
+  };
+}
+
+async function ensureEnrollmentState() {
+  if (!currentUser?.uid || !courseId) return false;
+  if (enrollmentCheckState.uid === currentUser.uid) return enrollmentCheckState.exists;
+
+  try {
+    const enrollmentSnap = await getDoc(doc(db, 'users', currentUser.uid, 'enrollments', courseId));
+    enrollmentCheckState = {
+      uid: currentUser.uid,
+      exists: enrollmentSnap.exists()
+    };
+    return enrollmentCheckState.exists;
+  } catch (error) {
+    console.error('Enrollment check failed:', error);
+    return false;
+  }
+}
+
+async function syncCourseProgressToFirebase({ ensureEnrollment = false } = {}) {
+  if (!currentUser?.uid || !categoryId || !courseId || !allExercises.length) return;
+
+  try {
+    let isEnrolled = await ensureEnrollmentState();
+    if (!isEnrolled && ensureEnrollment) {
+      const snapshot = getCourseProgressSnapshot();
+      await setDoc(doc(db, 'users', currentUser.uid, 'enrollments', courseId), {
+        categoryId,
+        categoryName: courseDetails.categoryName || '',
+        courseId,
+        courseName: courseDetails.courseName || '',
+        courseIcon: courseDetails.courseIcon || 'C',
+        courseDescription: courseDetails.courseDescription || '',
+        enrolledAt: serverTimestamp(),
+        lastAccessedAt: serverTimestamp(),
+        progress: snapshot.progress,
+        completedExercises: snapshot.completedExercises,
+        totalExercises: snapshot.totalExercises,
+        status: 'active'
+      }, { merge: true });
+      enrollmentCheckState = { uid: currentUser.uid, exists: true };
+      isEnrolled = true;
+    }
+
+    if (!isEnrolled) return;
+
+    const snapshot = getCourseProgressSnapshot();
+    await updateDoc(doc(db, 'users', currentUser.uid, 'enrollments', courseId), {
+      progress: snapshot.progress,
+      completedExercises: snapshot.completedExercises,
+      totalExercises: snapshot.totalExercises,
+      lastAccessedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Progress sync failed:', error);
+  }
+}
+
+async function ensureExerciseAccess() {
+  if (!categoryId || !courseId) {
+    window.location.href = 'learning.html';
+    return false;
+  }
+
+  const user = await getCurrentUserOnce();
+  if (!user) {
+    const redirect = encodeURIComponent(getCurrentExerciseRedirectUrl());
+    window.location.href = `profile.html?redirect=${redirect}`;
+    return false;
+  }
+
+  currentUser = user;
+  try {
+    const enrollmentSnap = await getDoc(doc(db, 'users', user.uid, 'enrollments', courseId));
+    if (!enrollmentSnap.exists()) {
+      window.location.href = getExercisesPageUrl('locked=1');
+      return false;
+    }
+    enrollmentCheckState = { uid: user.uid, exists: true };
+    return true;
+  } catch (error) {
+    console.error('Access check failed:', error);
+    window.location.href = getExercisesPageUrl('locked=1');
+    return false;
+  }
+}
+
 function updateProgressUI() {
   const meta = document.getElementById('exerciseProgressMeta');
   const fill = document.getElementById('exerciseProgressFill');
   if (!meta || !fill) return;
 
-  const total = allExercises.length;
-  const completed = allExercises.filter((exercise) => isExerciseCompleted(exercise)).length;
-  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const snapshot = getCourseProgressSnapshot();
 
-  meta.textContent = `${completed}/${total} completed (${percentage}%)`;
-  fill.style.width = `${percentage}%`;
+  meta.textContent = `${snapshot.completedExercises}/${snapshot.totalExercises} completed (${snapshot.progress}%)`;
+  fill.style.width = `${snapshot.progress}%`;
 }
 
 function updateMarkCompleteButton() {
@@ -96,7 +226,7 @@ function updateMarkCompleteButton() {
   const completed = isExerciseCompleted(currentExercise);
 
   button.disabled = completed;
-  button.textContent = completed ? 'Completed ✓' : 'Mark Complete';
+  button.textContent = completed ? 'Completed' : 'Mark Complete';
 }
 
 function detectCodeLanguage(codeText = '') {
@@ -411,12 +541,17 @@ async function loadBreadcrumb() {
     ]);
 
     if (catDoc.exists()) {
-      document.getElementById('breadCategory').textContent = catDoc.data().name;
+      const category = catDoc.data();
+      courseDetails.categoryName = category.name || '';
+      document.getElementById('breadCategory').textContent = category.name;
       document.getElementById('breadCategory').href = `courses.html?category=${categoryId}`;
     }
 
     if (courseDoc.exists()) {
       const course = courseDoc.data();
+      courseDetails.courseName = course.name || '';
+      courseDetails.courseDescription = course.description || '';
+      courseDetails.courseIcon = course.icon || 'C';
       document.getElementById('breadCourse').textContent = course.name;
       document.getElementById('breadCourse').href = `exercises.html?category=${categoryId}&course=${courseId}`;
     }
@@ -533,6 +668,10 @@ async function renderCurrentExercise() {
   } catch (error) {
     console.error('Error updating views:', error);
   }
+
+  syncCourseProgressToFirebase().catch((error) => {
+    console.error('Progress touch failed:', error);
+  });
 }
 
 function syncUrlWithCurrentExercise() {
@@ -577,6 +716,7 @@ async function loadExercises() {
     updateProgressUI();
     await renderCurrentExercise();
     syncUrlWithCurrentExercise();
+    await syncCourseProgressToFirebase();
   } catch (error) {
     console.error('Error loading exercises:', error);
     nav.innerHTML = '<div class="loading">Error loading exercises.</div>';
@@ -611,7 +751,7 @@ function setupExerciseNavigation() {
     syncUrlWithCurrentExercise();
   });
 
-  document.getElementById('markComplete').addEventListener('click', () => {
+  document.getElementById('markComplete').addEventListener('click', async () => {
     const exercise = allExercises[currentIndex];
     if (!exercise) return;
     if (isExerciseCompleted(exercise)) return;
@@ -621,6 +761,8 @@ function setupExerciseNavigation() {
     renderExerciseList();
     updateProgressUI();
     updateMarkCompleteButton();
+
+    await syncCourseProgressToFirebase({ ensureEnrollment: true });
     alert('Exercise marked as complete.');
   });
 }
@@ -665,13 +807,32 @@ function setupTopDrawer() {
   }
 }
 
-if (!categoryId || !courseId) {
-  window.location.href = 'learning.html';
-} else {
+function initAuthStateSync() {
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      const redirect = encodeURIComponent(getCurrentExerciseRedirectUrl());
+      window.location.href = `profile.html?redirect=${redirect}`;
+      return;
+    }
+    currentUser = user;
+    enrollmentCheckState = { uid: '', exists: false };
+    syncCourseProgressToFirebase().catch((error) => {
+      console.error('Initial progress sync failed:', error);
+    });
+  });
+}
+
+async function initPage() {
+  const hasAccess = await ensureExerciseAccess();
+  if (!hasAccess) return;
+
   loadCompletedExerciseKeys();
+  initAuthStateSync();
   setupTopDrawer();
   setupSidebarToggles();
   setupExerciseNavigation();
-  loadBreadcrumb();
-  loadExercises();
+  await loadBreadcrumb();
+  await loadExercises();
 }
+
+initPage();
