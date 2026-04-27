@@ -39,6 +39,15 @@ function getYouTubeVideoId(url) {
   return match && match[7] && match[7].length === 11 ? match[7] : null;
 }
 
+function isValidHttpUrl(value) {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch (error) {
+    return false;
+  }
+}
+
 function setGridMessage(message, color = 'var(--muted)') {
   document.getElementById('videosGrid').innerHTML = `
     <div class="empty-state" style="grid-column:1 / -1;color:${color}">
@@ -264,11 +273,13 @@ async function saveVideo(event) {
     return;
   }
 
-  const videoId = getYouTubeVideoId(url);
-  if (!videoId) {
-    alert('Invalid YouTube URL. Please enter a valid YouTube video URL.');
+  if (!isValidHttpUrl(url)) {
+    alert('Please enter a valid video URL.');
     return;
   }
+
+  const videoId = getYouTubeVideoId(url);
+  const sourceType = videoId ? 'youtube' : 'external';
 
   const saveBtn = document.getElementById('saveBtn');
   saveBtn.disabled = true;
@@ -278,7 +289,8 @@ async function saveVideo(event) {
     const payload = {
       title,
       url,
-      videoId,
+      videoId: videoId || null,
+      sourceType,
       description,
       duration,
       order,

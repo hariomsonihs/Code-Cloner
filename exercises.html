@@ -353,6 +353,14 @@
       height: 100%;
       border: none;
     }
+    .video-player-frame video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #000;
+    }
     .video-info {
       padding: 0.82rem 0.95rem;
     }
@@ -548,6 +556,14 @@
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen>
         </iframe>
+        <video
+          id="videoPlayerHtml5"
+          controls
+          playsinline
+          webkit-playsinline
+          preload="metadata"
+          style="display:none;">
+        </video>
       </div>
     </div>
   </div>
@@ -575,6 +591,7 @@
     let completedExerciseKeys = new Set();
     const videoPlayerModal = document.getElementById('videoPlayerModal');
     const videoPlayerFrame = document.getElementById('videoPlayerFrame');
+    const videoPlayerHtml5 = document.getElementById('videoPlayerHtml5');
     const videoPlayerTitle = document.getElementById('videoPlayerTitle');
 
     function parseOrder(value) {
@@ -617,10 +634,6 @@
       return match && match[7] && match[7].length === 11 ? match[7] : null;
     }
 
-    function resolveVideoId(video) {
-      return video?.videoId || getYouTubeVideoId(video?.url);
-    }
-
     function getEmbedPlayerUrl(videoId) {
       const queryParams = new URLSearchParams({
         autoplay: '1',
@@ -632,22 +645,85 @@
       return `https://www.youtube-nocookie.com/embed/${videoId}?${queryParams.toString()}`;
     }
 
+    function isLikelyDirectVideoUrl(url) {
+      if (!url) return false;
+      const cleanedUrl = String(url).toLowerCase();
+      return /\.(mp4|mov|m4v|webm|ogg|m3u8)(\?|#|$)/i.test(cleanedUrl)
+        || cleanedUrl.includes('/video/upload/');
+    }
+
+    function getCloudinaryThumbnail(url) {
+      if (!url || !String(url).includes('res.cloudinary.com')) return null;
+      const noQuery = String(url).split('?')[0];
+      return noQuery
+        .replace('/video/upload/', '/video/upload/so_1/')
+        .replace(/\.(mp4|mov|m4v|webm|ogg|m3u8)$/i, '.jpg');
+    }
+
+    function resolveVideoSource(video) {
+      const url = String(video?.url || '').trim();
+      const youtubeId = video?.videoId || getYouTubeVideoId(url);
+
+      if (youtubeId) {
+        return {
+          type: 'youtube',
+          source: getEmbedPlayerUrl(youtubeId),
+          thumbnail: `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`
+        };
+      }
+
+      if (url && isLikelyDirectVideoUrl(url)) {
+        return {
+          type: 'direct',
+          source: url,
+          thumbnail: getCloudinaryThumbnail(url)
+        };
+      }
+
+      return { type: 'none', source: null, thumbnail: null };
+    }
+
     function closeVideoPlayer() {
-      if (!videoPlayerModal || !videoPlayerFrame) return;
+      if (!videoPlayerModal || !videoPlayerFrame || !videoPlayerHtml5) return;
       videoPlayerModal.classList.remove('show');
       videoPlayerModal.setAttribute('aria-hidden', 'true');
       videoPlayerFrame.src = '';
+      videoPlayerFrame.style.display = 'none';
+      videoPlayerHtml5.pause();
+      videoPlayerHtml5.removeAttribute('src');
+      videoPlayerHtml5.load();
+      videoPlayerHtml5.style.display = 'none';
       document.body.style.overflow = '';
     }
 
     function openVideoPlayer(video) {
-      const videoId = resolveVideoId(video);
-      if (!videoId || !videoPlayerModal || !videoPlayerFrame) return;
+      const resolvedSource = resolveVideoSource(video);
+      if (!videoPlayerModal || !videoPlayerFrame || !videoPlayerHtml5) return;
+      if (resolvedSource.type === 'none') return;
 
       if (videoPlayerTitle) {
         videoPlayerTitle.textContent = video.title || 'Course Video';
       }
-      videoPlayerFrame.src = getEmbedPlayerUrl(videoId);
+
+      if (resolvedSource.type === 'youtube') {
+        videoPlayerHtml5.pause();
+        videoPlayerHtml5.removeAttribute('src');
+        videoPlayerHtml5.load();
+        videoPlayerHtml5.style.display = 'none';
+        videoPlayerFrame.style.display = 'block';
+        videoPlayerFrame.src = resolvedSource.source;
+      } else {
+        videoPlayerFrame.src = '';
+        videoPlayerFrame.style.display = 'none';
+        videoPlayerHtml5.style.display = 'block';
+        videoPlayerHtml5.src = resolvedSource.source;
+        videoPlayerHtml5.load();
+        const playPromise = videoPlayerHtml5.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(() => {});
+        }
+      }
+
       videoPlayerModal.classList.add('show');
       videoPlayerModal.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
@@ -872,7 +948,7 @@
           const card = document.createElement('article');
           card.className = 'video-card';
 
-          const videoId = resolveVideoId(video);
+          const resolvedSource = resolveVideoSource(video);
           const thumbnailBtn = document.createElement('button');
           thumbnailBtn.type = 'button';
           thumbnailBtn.className = 'video-thumbnail';
@@ -883,8 +959,8 @@
           thumbImg.loading = 'lazy';
           thumbImg.alt = `${video.title || 'Video'} thumbnail`;
 
-          if (videoId) {
-            thumbImg.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+          if (resolvedSource.type !== 'none') {
+            thumbImg.src = resolvedSource.thumbnail || 'code_cloner_logo.jpeg';
             thumbnailBtn.addEventListener('click', () => openVideoPlayer(video));
           } else {
             thumbImg.src = 'code_cloner_logo.jpeg';
@@ -893,7 +969,7 @@
 
           const playChip = document.createElement('span');
           playChip.className = 'video-play-btn';
-          playChip.textContent = videoId ? 'Play Video' : 'Video unavailable';
+          playChip.textContent = resolvedSource.type !== 'none' ? 'Play Video' : 'Video unavailable';
 
           thumbnailBtn.appendChild(thumbImg);
           thumbnailBtn.appendChild(playChip);
@@ -930,10 +1006,10 @@
             meta.appendChild(relatedBadge);
           }
 
-          if (!videoId) {
+          if (resolvedSource.type === 'none') {
             const brokenBadge = document.createElement('span');
             brokenBadge.className = 'video-badge';
-            brokenBadge.textContent = 'Missing YouTube ID';
+            brokenBadge.textContent = 'Invalid video link';
             meta.appendChild(brokenBadge);
           }
 
