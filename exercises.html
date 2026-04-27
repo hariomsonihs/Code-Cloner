@@ -303,6 +303,29 @@
       height: 100%;
       border: none;
     }
+    /* Fullscreen support */
+    .video-inline-player:fullscreen,
+    .video-inline-player:-webkit-full-screen,
+    .video-inline-player:-moz-full-screen,
+    .video-inline-player:-ms-fullscreen {
+      width: 100vw;
+      height: 100vh;
+      padding-top: 0;
+    }
+    .video-inline-player:fullscreen iframe,
+    .video-inline-player:-webkit-full-screen iframe,
+    .video-inline-player:-moz-full-screen iframe,
+    .video-inline-player:-ms-fullscreen iframe,
+    .video-inline-player:fullscreen video,
+    .video-inline-player:-webkit-full-screen video,
+    .video-inline-player:-moz-full-screen video,
+    .video-inline-player:-ms-fullscreen video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
     .video-inline-close {
       position: absolute;
       top: 8px;
@@ -745,15 +768,11 @@
         inlineVideo.playsInline = true;
         inlineVideo.setAttribute('webkit-playsinline', 'true');
         inlineVideo.setAttribute('controlsList', 'nodownload noremoteplayback noplaybackrate');
-        inlineVideo.setAttribute('disablePictureInPicture', '');
-        inlineVideo.setAttribute('disableRemotePlayback', '');
-        inlineVideo.setAttribute('x-webkit-airplay', 'deny');
         inlineVideo.preload = 'metadata';
         inlineVideo.src = resolvedSource.source;
         inlineVideo.autoplay = true;
         inlineVideo.addEventListener('contextmenu', (event) => event.preventDefault());
 
-        // Chromium-based browsers/WebView: actively request removal of download item.
         if (inlineVideo.controlsList && typeof inlineVideo.controlsList.add === 'function') {
           inlineVideo.controlsList.add('nodownload');
           inlineVideo.controlsList.add('noremoteplayback');
@@ -769,8 +788,11 @@
         inlineIframe = document.createElement('iframe');
         inlineIframe.src = resolvedSource.source;
         inlineIframe.title = video.title || 'Course Video';
-        inlineIframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        inlineIframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
         inlineIframe.allowFullscreen = true;
+        inlineIframe.setAttribute('allowfullscreen', '');
+        inlineIframe.setAttribute('webkitallowfullscreen', '');
+        inlineIframe.setAttribute('mozallowfullscreen', '');
         inlinePlayer.appendChild(inlineIframe);
       }
 
