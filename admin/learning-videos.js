@@ -34,9 +34,108 @@ function sortDocsByOrder(docs) {
 }
 
 function getYouTubeVideoId(url) {
-  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-  const match = url.match(regExp);
-  return match && match[7] && match[7].length === 11 ? match[7] : null;
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '').replace(/^m\./, '');
+
+    if (host === 'youtu.be') {
+      const candidate = parsed.pathname.split('/').filter(Boolean)[0];
+      return /^[A-Za-z0-9_-]{11}$/.test(candidate) ? candidate : null;
+    }
+
+    if (host.includes('youtube.com') || host.includes('youtube-nocookie.com')) {
+      const fromQuery = parsed.searchParams.get('v');
+      if (fromQuery && /^[A-Za-z0-9_-]{11}$/.test(fromQuery)) {
+        return fromQuery;
+      }
+
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      const markerIndex = segments.findIndex((part) => ['embed', 'shorts', 'live', 'v'].includes(part));
+      if (markerIndex !== -1 && segments[markerIndex + 1] && /^[A-Za-z0-9_-]{11}$/.test(segments[markerIndex + 1])) {
+        return segments[markerIndex + 1];
+      }
+    }
+  } catch (error) {
+    return null;
+  }
+
+  return null;
+}
+
+function encodeCloudinaryPublicId(publicId) {
+  return String(publicId)
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+}
+
+function normalizeCloudinaryUrl(rawUrl) {
+  if (!rawUrl) return rawUrl;
+
+  try {
+    const parsed = new URL(rawUrl);
+    const host = parsed.hostname.toLowerCase();
+    const path = parsed.pathname.toLowerCase();
+
+    if (host.includes('player.cloudinary.com') && path.includes('/embed')) {
+      const cloudName = parsed.searchParams.get('cloud_name');
+      const publicId = parsed.searchParams.get('public_id');
+
+      if (cloudName && publicId) {
+        const safePublicId = encodeCloudinaryPublicId(publicId);
+        return `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/video/upload/${safePublicId}.mp4`;
+      }
+    }
+  } catch (error) {
+    return rawUrl;
+  }
+
+  return rawUrl;
+}
+
+function getGoogleDriveFileId(url) {
+  if (!url) return null;
+  const raw = String(url).trim();
+
+  const patternMatches = [
+    raw.match(/\/file\/d\/([A-Za-z0-9_-]{10,})/),
+    raw.match(/[?&]id=([A-Za-z0-9_-]{10,})/),
+    raw.match(/\/d\/([A-Za-z0-9_-]{10,})/)
+  ];
+
+  for (const match of patternMatches) {
+    if (match && match[1]) return match[1];
+  }
+
+  try {
+    const parsed = new URL(raw);
+    const host = parsed.hostname.toLowerCase();
+    if (!host.includes('drive.google.com') && !host.includes('docs.google.com')) {
+      return null;
+    }
+
+    const idFromQuery = parsed.searchParams.get('id');
+    if (idFromQuery && /^[A-Za-z0-9_-]{10,}$/.test(idFromQuery)) {
+      return idFromQuery;
+    }
+  } catch (error) {
+    return null;
+  }
+
+  return null;
+}
+
+function normalizeGoogleDriveUrl(rawUrl) {
+  const fileId = getGoogleDriveFileId(rawUrl);
+  if (!fileId) return rawUrl;
+  return `https://drive.google.com/file/d/${fileId}/preview`;
+}
+
+function normalizeVideoUrl(rawUrl) {
+  return normalizeGoogleDriveUrl(normalizeCloudinaryUrl(rawUrl));
 }
 
 function isValidHttpUrl(value) {
@@ -262,7 +361,8 @@ async function saveVideo(event) {
   const categoryId = document.getElementById('videoCategory').value;
   const courseId = document.getElementById('videoCourse').value;
   const title = document.getElementById('videoTitle').value.trim();
-  const url = document.getElementById('videoUrl').value.trim();
+  const rawUrl = document.getElementById('videoUrl').value.trim();
+  const url = normalizeVideoUrl(rawUrl);
   const description = document.getElementById('videoDescription').value.trim();
   const duration = document.getElementById('videoDuration').value.trim();
   const order = parseOrder(document.getElementById('videoOrder').value);
@@ -279,7 +379,14 @@ async function saveVideo(event) {
   }
 
   const videoId = getYouTubeVideoId(url);
-  const sourceType = videoId ? 'youtube' : 'external';
+  const googleDriveFileId = getGoogleDriveFileId(url);
+  const sourceType = videoId
+    ? 'youtube'
+    : googleDriveFileId
+      ? 'google-drive'
+    : url.includes('res.cloudinary.com')
+      ? 'cloudinary'
+      : 'external';
 
   const saveBtn = document.getElementById('saveBtn');
   saveBtn.disabled = true;

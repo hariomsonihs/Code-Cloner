@@ -557,9 +557,33 @@
 
     function getYouTubeVideoId(url) {
       if (!url) return null;
-      const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-      const match = String(url).match(regExp);
-      return match && match[7] && match[7].length === 11 ? match[7] : null;
+
+      try {
+        const parsed = new URL(url);
+        const host = parsed.hostname.replace(/^www\./, '').replace(/^m\./, '');
+
+        if (host === 'youtu.be') {
+          const candidate = parsed.pathname.split('/').filter(Boolean)[0];
+          return /^[A-Za-z0-9_-]{11}$/.test(candidate) ? candidate : null;
+        }
+
+        if (host.includes('youtube.com') || host.includes('youtube-nocookie.com')) {
+          const fromQuery = parsed.searchParams.get('v');
+          if (fromQuery && /^[A-Za-z0-9_-]{11}$/.test(fromQuery)) {
+            return fromQuery;
+          }
+
+          const segments = parsed.pathname.split('/').filter(Boolean);
+          const markerIndex = segments.findIndex((part) => ['embed', 'shorts', 'live', 'v'].includes(part));
+          if (markerIndex !== -1 && segments[markerIndex + 1] && /^[A-Za-z0-9_-]{11}$/.test(segments[markerIndex + 1])) {
+            return segments[markerIndex + 1];
+          }
+        }
+      } catch (error) {
+        return null;
+      }
+
+      return null;
     }
 
     function getEmbedPlayerUrl(videoId) {
@@ -571,6 +595,75 @@
         iv_load_policy: '3'
       });
       return `https://www.youtube-nocookie.com/embed/${videoId}?${queryParams.toString()}`;
+    }
+
+    function getGoogleDriveFileId(url) {
+      if (!url) return null;
+      const raw = String(url).trim();
+
+      const patternMatches = [
+        raw.match(/\/file\/d\/([A-Za-z0-9_-]{10,})/),
+        raw.match(/[?&]id=([A-Za-z0-9_-]{10,})/),
+        raw.match(/\/d\/([A-Za-z0-9_-]{10,})/)
+      ];
+
+      for (const match of patternMatches) {
+        if (match && match[1]) return match[1];
+      }
+
+      try {
+        const parsed = new URL(raw);
+        const host = parsed.hostname.toLowerCase();
+        if (!host.includes('drive.google.com') && !host.includes('docs.google.com')) {
+          return null;
+        }
+
+        const idFromQuery = parsed.searchParams.get('id');
+        if (idFromQuery && /^[A-Za-z0-9_-]{10,}$/.test(idFromQuery)) {
+          return idFromQuery;
+        }
+      } catch (error) {
+        return null;
+      }
+
+      return null;
+    }
+
+    function normalizeGoogleDriveUrl(rawUrl) {
+      const fileId = getGoogleDriveFileId(rawUrl);
+      if (!fileId) return rawUrl;
+      return `https://drive.google.com/file/d/${fileId}/preview`;
+    }
+
+    function encodeCloudinaryPublicId(publicId) {
+      return String(publicId)
+        .split('/')
+        .filter(Boolean)
+        .map((segment) => encodeURIComponent(segment))
+        .join('/');
+    }
+
+    function normalizeCloudinaryUrl(rawUrl) {
+      if (!rawUrl) return rawUrl;
+
+      try {
+        const parsed = new URL(rawUrl);
+        const host = parsed.hostname.toLowerCase();
+        const path = parsed.pathname.toLowerCase();
+
+        if (host.includes('player.cloudinary.com') && path.includes('/embed')) {
+          const cloudName = parsed.searchParams.get('cloud_name');
+          const publicId = parsed.searchParams.get('public_id');
+          if (cloudName && publicId) {
+            const safePublicId = encodeCloudinaryPublicId(publicId);
+            return `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/video/upload/${safePublicId}.mp4`;
+          }
+        }
+      } catch (error) {
+        return rawUrl;
+      }
+
+      return rawUrl;
     }
 
     function isLikelyDirectVideoUrl(url) {
@@ -589,22 +682,32 @@
     }
 
     function resolveVideoSource(video) {
-      const url = String(video?.url || '').trim();
-      const youtubeId = video?.videoId || getYouTubeVideoId(url);
+      const rawUrl = String(video?.url || '').trim();
+      const normalizedUrl = normalizeGoogleDriveUrl(normalizeCloudinaryUrl(rawUrl));
+      const youtubeId = video?.videoId || getYouTubeVideoId(normalizedUrl) || getYouTubeVideoId(rawUrl);
+      const googleDriveFileId = getGoogleDriveFileId(normalizedUrl) || getGoogleDriveFileId(rawUrl);
 
       if (youtubeId) {
         return {
-          type: 'youtube',
+          type: 'iframe',
           source: getEmbedPlayerUrl(youtubeId),
           thumbnail: `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`
         };
       }
 
-      if (url && isLikelyDirectVideoUrl(url)) {
+      if (googleDriveFileId) {
+        return {
+          type: 'iframe',
+          source: `https://drive.google.com/file/d/${googleDriveFileId}/preview`,
+          thumbnail: `https://drive.google.com/thumbnail?id=${encodeURIComponent(googleDriveFileId)}&sz=w1280`
+        };
+      }
+
+      if (normalizedUrl && isLikelyDirectVideoUrl(normalizedUrl)) {
         return {
           type: 'direct',
-          source: url,
-          thumbnail: getCloudinaryThumbnail(url)
+          source: normalizedUrl,
+          thumbnail: getCloudinaryThumbnail(normalizedUrl)
         };
       }
 
@@ -636,14 +739,7 @@
       let inlineIframe = null;
       let inlineVideo = null;
 
-      if (resolvedSource.type === 'youtube') {
-        inlineIframe = document.createElement('iframe');
-        inlineIframe.src = resolvedSource.source;
-        inlineIframe.title = video.title || 'Course Video';
-        inlineIframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-        inlineIframe.allowFullscreen = true;
-        inlinePlayer.appendChild(inlineIframe);
-      } else {
+      if (resolvedSource.type === 'direct') {
         inlineVideo = document.createElement('video');
         inlineVideo.controls = true;
         inlineVideo.playsInline = true;
@@ -669,6 +765,13 @@
         if (playPromise && typeof playPromise.catch === 'function') {
           playPromise.catch(() => {});
         }
+      } else {
+        inlineIframe = document.createElement('iframe');
+        inlineIframe.src = resolvedSource.source;
+        inlineIframe.title = video.title || 'Course Video';
+        inlineIframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        inlineIframe.allowFullscreen = true;
+        inlinePlayer.appendChild(inlineIframe);
       }
 
       const cleanup = () => {
