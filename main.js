@@ -9,14 +9,24 @@ initShellNavigation();
 initRevealAnimations();
 initNotifications();
 
-// ── Counters ──
-const counters = { articles:"countArticles", tips:"countTips", facts:"countFacts", projects:"countProjects", resources:"countResources" };
-Object.keys(counters).forEach(col => {
-  onSnapshot(collection(db, col), snap => {
-    const el = document.getElementById(counters[col]);
-    if (el) el.textContent = snap.size;
+// ── Counters (optimized - single query) ──
+let countersLoaded = false;
+async function loadCounters() {
+  if (countersLoaded) return;
+  countersLoaded = true;
+  const types = ['articles', 'tips', 'facts', 'projects', 'resources'];
+  const ids = ['countArticles', 'countTips', 'countFacts', 'countProjects', 'countResources'];
+  
+  types.forEach(async (col, i) => {
+    try {
+      const snap = await getDocs(query(collection(db, col), limit(1)));
+      const fullSnap = await getDocs(collection(db, col));
+      const el = document.getElementById(ids[i]);
+      if (el) el.textContent = fullSnap.size;
+    } catch {}
   });
-});
+}
+loadCounters();
 
 // ── Typing animation ──
 const words = ["live content updates.", "in-depth articles.", "quick tips & tricks.", "hands-on projects.", "fascinating facts.", "curated resources."];
@@ -43,20 +53,40 @@ function banner(cls, icon, imageUrl) {
   return `<div class="card-banner ${cls}"><span class="card-banner-icon">${icon}</span><div class="card-banner-shape"></div><div class="card-banner-shape2"></div></div>`;
 }
 
-// ── Featured Slider ──
+// ── Featured Slider (cached) ──
+let featuredCache = null;
+let featuredLoadTime = 0;
+const CACHE_TTL = 5 * 60 * 1000;
+
 async function loadFeatured() {
+  const now = Date.now();
+  if (featuredCache && (now - featuredLoadTime) < CACHE_TTL) {
+    renderFeatured(featuredCache);
+    return;
+  }
+
   const types = ["articles","tips","facts","projects","resources"];
+  let all = [];
+  
+  for (const t of types) {
+    try {
+      const snap = await getDocs(query(collection(db, t), where("featured", "==", true), limit(3)));
+      snap.docs.forEach(d => all.push({ id: d.id, type: t, data: d.data() }));
+      if (all.length >= 6) break;
+    } catch {}
+  }
+  
+  if (!all.length) return;
+  featuredCache = all;
+  featuredLoadTime = now;
+  renderFeatured(all);
+}
+
+function renderFeatured(all) {
   const bannerCls = { articles:"banner-article", tips:"banner-tip", facts:"banner-fact", projects:"banner-project", resources:"banner-resource" };
   const icons     = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗" };
   const badgeCls  = { articles:"", tips:"badge-green", facts:"badge-orange", projects:"badge-purple", resources:"badge-muted" };
-  let all = [];
-  await Promise.all(types.map(async t => {
-    try {
-      const snap = await getDocs(query(collection(db, t), where("featured", "==", true), limit(5)));
-      snap.docs.forEach(d => all.push({ id: d.id, type: t, data: d.data() }));
-    } catch {}
-  }));
-  if (!all.length) return;
+  
   const section = document.getElementById("featuredSection");
   const list    = document.getElementById("featuredList");
   section.style.display = "block";
@@ -79,16 +109,26 @@ async function loadFeatured() {
   }).join("");
   initSwiper("featuredList", "dotFeatured");
 }
-loadFeatured();
+setTimeout(() => loadFeatured(), 100);
 
-// ── Trending ──
+// ── Trending (cached) ──
+let trendingCache = null;
+let trendingLoadTime = 0;
+
 async function loadTrending() {
+  const now = Date.now();
+  if (trendingCache && (now - trendingLoadTime) < CACHE_TTL) {
+    renderTrending(trendingCache);
+    return;
+  }
+
   const list = document.getElementById("trendingList");
   const types = ["articles","tips","facts","projects","resources"];
   const typeIcon = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗" };
   let all = [];
-  await Promise.all(types.map(async t => {
-    const q = query(collection(db, t), orderBy("views","desc"), limit(4));
+  
+  for (const t of types) {
+    const q = query(collection(db, t), orderBy("views","desc"), limit(2));
     try {
       const snap = await getDocs(q);
       snap.docs.forEach(d => {
@@ -96,10 +136,25 @@ async function loadTrending() {
         if ((data.views||0) > 0) all.push({ id:d.id, type:t, title:data.title||data.name||"Untitled", views:data.views||0, category:data.category||"" });
       });
     } catch {}
-  }));
+  }
+  
   all.sort((a,b) => b.views - a.views);
   const top = all.slice(0, 6);
-  if (!top.length) { list.innerHTML = `<div class="state-box">No trending content yet — views will appear here.</div>`; return; }
+  
+  if (!top.length) { 
+    list.innerHTML = `<div class="state-box">No trending content yet — views will appear here.</div>`; 
+    return; 
+  }
+  
+  trendingCache = top;
+  trendingLoadTime = now;
+  renderTrending(top);
+}
+
+function renderTrending(top) {
+  const list = document.getElementById("trendingList");
+  const typeIcon = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗" };
+  
   list.innerHTML = top.map((item, i) => `
     <a class="trending-item" href="read.html?type=${item.type}&id=${item.id}">
       <span class="trending-rank">#${i+1}</span>
@@ -110,7 +165,7 @@ async function loadTrending() {
       <span class="trending-views">👁 ${item.views}</span>
     </a>`).join("");
 }
-loadTrending();
+setTimeout(() => loadTrending(), 400);
 
 // ── Swiper ──
 function initSwiper(trackId, dotsId) {
@@ -140,11 +195,12 @@ function initSwiper(trackId, dotsId) {
 function watchLatest(col, listId, lim, renderer, dotsId) {
   const container = document.getElementById(listId); if(!container) return;
   const q = query(collection(db, col), orderBy("createdAt","desc"), limit(lim));
-  onSnapshot(q, snap => {
+  
+  getDocs(q).then(snap => {
     if (snap.empty) { renderState(container, `No ${col} yet.`); return; }
     container.innerHTML = snap.docs.map(d => renderer(d.id, d.data())).join("");
     initSwiper(listId, dotsId);
-  }, err => renderState(container, `Unable to load ${col}: ${err.message}`));
+  }).catch(err => renderState(container, `Unable to load ${col}: ${err.message}`));
 }
 
 watchLatest("articles","latestArticles",3,(id,d) => `
