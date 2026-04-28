@@ -145,12 +145,12 @@ function isPersonalQuestion(query) {
 function getPersonalReply(query) {
   const q = normalize(query);
   if (/\b(name|naam)\b/.test(q)) {
-    return `Mera naam ${BRAND_NAME} hai. Main aapki website ka smart assistant hoon.`;
+    return `I'm **${BRAND_NAME}** - your smart learning assistant! 🤖\n\nI help you discover courses, articles, and create personalized learning paths.`;
   }
   if (/\b(where are you from|kahan se ho)\b/.test(q)) {
-    return `Main ${WEBSITE_DETAILS.name} website ke andar chalne wala assistant hoon, yahin se help karta hoon.`;
+    return `I'm built into the ${WEBSITE_DETAILS.name} platform to help you learn better! 🚀`;
   }
-  return `Main ${BRAND_NAME} hoon. Aap mujhse casual chat bhi kar sakte ho aur content bhi find kar sakte ho.`;
+  return `I'm **${BRAND_NAME}** - here to help you find the best learning content and track your progress! 📚`;
 }
 
 function isDeveloperOrWebsiteQuery(query) {
@@ -165,40 +165,36 @@ function isDeveloperOrWebsiteQuery(query) {
 
 function getDeveloperWebsiteReply(query) {
   const q = normalize(query);
-  const detailText = [
-    `**${BRAND_NAME} Details:**`,
-    ``,
-    `**Website:** ${WEBSITE_DETAILS.name}`,
-    `**Purpose:** ${WEBSITE_DETAILS.purpose}`,
-    `**Main Sections:** ${WEBSITE_DETAILS.sections.join(', ')}`,
-    ``,
-    `**Developer Details:**`,
-    `**Name:** ${DEVELOPER_PROFILE.name}`,
-    `**Qualification:** ${DEVELOPER_PROFILE.degree}`,
-    `**Contact:** +91 ${DEVELOPER_PROFILE.phone}`,
-    `**Email:** ${DEVELOPER_PROFILE.email}`
-  ].join('\n');
-
+  
   if (/\b(phone|number|contact)\b/.test(q)) {
     return {
-      text: `**Developer Contact:**\n\n**Name:** ${DEVELOPER_PROFILE.name}\n**Phone:** +91 ${DEVELOPER_PROFILE.phone}\n**Email:** ${DEVELOPER_PROFILE.email}`,
-      links: [{ label: 'Open Profile Page', href: 'profile.html' }]
+      text: `📞 **Contact Developer:**\n\n**${DEVELOPER_PROFILE.name}** (${DEVELOPER_PROFILE.degree})\n📱 +91 ${DEVELOPER_PROFILE.phone}\n📧 ${DEVELOPER_PROFILE.email}`,
+      links: [{ label: '👤 View Profile', href: 'profile.html' }]
     };
   }
 
   if (/\b(email)\b/.test(q)) {
     return {
-      text: `**Developer Email:** ${DEVELOPER_PROFILE.email}\n**Name:** ${DEVELOPER_PROFILE.name}`,
-      links: [{ label: 'Open Profile Page', href: 'profile.html' }]
+      text: `📧 **Developer Email:**\n${DEVELOPER_PROFILE.email}\n\n**${DEVELOPER_PROFILE.name}** - ${DEVELOPER_PROFILE.degree}`,
+      links: [{ label: '👤 View Profile', href: 'profile.html' }]
+    };
+  }
+
+  if (/\b(about website|website details|code cloner details|what is this|what is code cloner)\b/.test(q)) {
+    return {
+      text: `🚀 **About ${WEBSITE_DETAILS.name}**\n\n${WEBSITE_DETAILS.purpose}\n\n**Available Sections:**\n${WEBSITE_DETAILS.sections.map(s => `- ${s}`).join('\n')}`,
+      links: [
+        { label: '🏠 Home', href: 'index.html' },
+        { label: '🎓 Learning Hub', href: 'learning.html' }
+      ]
     };
   }
 
   return {
-    text: detailText,
+    text: `📞 **Contact & Info:**\n\n**Developer:** ${DEVELOPER_PROFILE.name}\n**Phone:** +91 ${DEVELOPER_PROFILE.phone}\n**Email:** ${DEVELOPER_PROFILE.email}`,
     links: [
-      { label: 'Open Home', href: 'index.html' },
-      { label: 'Open Learning', href: 'learning.html' },
-      { label: 'Open Profile', href: 'profile.html' }
+      { label: '👤 Profile', href: 'profile.html' },
+      { label: '🏠 Home', href: 'index.html' }
     ]
   };
 }
@@ -216,12 +212,12 @@ function hasExplicitSearchIntent(query) {
 function getSmallTalkReply(query) {
   const q = normalize(query);
   if (/\b(thanks|thank you|thx|shukriya)\b/.test(q)) {
-    return 'Always happy to help. Agar aap chaho to main abhi kisi bhi topic ka best content nikaal ke de sakta hoon.';
+    return '😊 Happy to help! Need anything else? I can find courses, articles, or create learning plans for you.';
   }
   if (/\b(kya haal|kaise ho|kaisa hai|haal chal|how are you)\b/.test(q)) {
-    return 'Main bilkul badhiya. Aap bolo, aaj kis topic par kaam karna hai?';
+    return '👍 All good! What would you like to learn today? I can help you find courses, articles, or plan your learning journey.';
   }
-  return `Hello! Main ${BRAND_NAME} hoon. Casual chat bhi kar sakte hain, ya agar kuchh find karna ho to seedha topic likh do.`;
+  return `👋 Hello! I'm ${BRAND_NAME}. Ask me to find courses, articles, tips, or create a learning roadmap for any topic!`;
 }
 
 async function getFirebaseContext() {
@@ -925,10 +921,10 @@ function extractTopic(query) {
   return lower.replace(/(create|make|give|a|an|the|learning|roadmap|plan)/g, '').trim();
 }
 
-async function answerQuery(query) {
+function answerQuery(query) {
   const q = normalize(query);
   if (!q) {
-    return { text: `Ask me anything about ${WEBSITE_DETAILS.name}: posts, courses, roadmap, developer details, or contact info.`, links: [] };
+    return { text: `**What can I help you with?**\n\n- 🔍 Search articles, tips, facts\n- 🎓 Find courses & tutorials\n- 🗺️ Create learning roadmaps\n- 📊 Track your progress\n\nJust type your question!`, links: [] };
   }
 
   if (isPersonalQuestion(query)) {
@@ -1039,16 +1035,16 @@ async function answerQuery(query) {
   };
 }
 
-function initQuickActions(quickEl, inputEl, submitHandler) {
-  const actions = [
-    { label: 'Find courses', prompt: 'Show beginner web development courses' },
-    { label: 'Plan', prompt: 'Create a 4 week roadmap for javascript' },
-    { label: 'Summary', prompt: 'Summarize this page' },
-    { label: 'Developer', prompt: 'Developer details and contact' },
-    { label: 'Search page', prompt: 'Open search' }
-  ];
+const QUICK_ACTIONS = [
+  { label: '🎓 Courses', prompt: 'Show me beginner courses' },
+  { label: '📚 Articles', prompt: 'Find latest articles' },
+  { label: '🗺️ Roadmap', prompt: 'Create learning roadmap for javascript' },
+  { label: '💡 Tips', prompt: 'Show programming tips' },
+  { label: '🔍 Search', prompt: 'Open search' }
+];
 
-  actions.forEach((action) => {
+function initQuickActions(quickEl, inputEl, submitHandler) {
+  QUICK_ACTIONS.forEach((action) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'cc-ai-chip';
@@ -1118,7 +1114,7 @@ function initAssistant() {
   addMessage(
     messagesEl,
     'bot',
-    `**Hi! I am ${BRAND_NAME}.**\n\nMain website content, learning courses, roadmap, developer details, aur contact info sab bata sakta hoon. 🚀`
+    `👋 **Hi! I'm ${BRAND_NAME}**\n\nI can help you with:\n- 📚 Find articles, tips, facts & projects\n- 🎓 Discover courses & learning paths\n- 🔍 Search any programming topic\n- 📊 Track your learning progress\n\nJust ask me anything!`
   );
 
   initQuickActions(quickEl, inputEl, submitQuery);
