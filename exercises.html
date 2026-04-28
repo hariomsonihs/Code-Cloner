@@ -581,7 +581,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
-            <span id="enrollmentProgress">Enrolled • 0% Complete</span>
+            <span id="enrollmentProgress">Enrolled &bull; 0% Complete</span>
           </div>
         </div>
       </div>
@@ -879,7 +879,7 @@
       closeBtn.type = 'button';
       closeBtn.className = 'video-inline-close';
       closeBtn.setAttribute('aria-label', 'Stop video');
-      closeBtn.textContent = '×';
+      closeBtn.textContent = '\u00D7';
       inlinePlayer.appendChild(closeBtn);
 
       let inlineIframe = null;
@@ -1011,7 +1011,7 @@
           const progress = data.progress || 0;
           const completed = data.completedExercises || 0;
           const total = data.totalExercises || 0;
-          enrollmentProgress.textContent = `Enrolled • ${progress}% (${completed}/${total})`;
+          enrollmentProgress.textContent = `Enrolled \u2022 ${progress}% (${completed}/${total})`;
 
           enrollBtn.style.display = 'inline-flex';
           enrollBtn.className = 'enroll-btn enrolled';
@@ -1275,7 +1275,7 @@
         if (!videosList.length) {
           grid.innerHTML = `
             <div class="empty-state">
-              <div class="empty-icon">&#128221;</div>
+              <div class="empty-icon">&#127909;</div>
               <h3>No videos yet</h3>
               <p>Videos will be added soon!</p>
             </div>
