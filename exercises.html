@@ -562,7 +562,7 @@
       <span id="courseName">Course</span>
     </div>
     <div class="course-header" id="courseHeader">
-      <div class="course-icon-large" id="courseIcon">??</div>
+      <div class="course-icon-large" id="courseIcon">&#128218;</div>
       <div class="course-info">
         <h1 id="courseTitle">Loading...</h1>
         <p id="courseDesc"></p>
@@ -581,7 +581,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
-            <span id="enrollmentProgress">Enrolled • 0% Complete</span>
+            <span id="enrollmentProgress">Enrolled â€¢ 0% Complete</span>
           </div>
         </div>
       </div>
@@ -592,10 +592,10 @@
     <div class="tabs-container" style="margin-bottom: 1.2rem;">
       <div class="tabs-nav" style="display: flex; gap: 0.5rem; border-bottom: 2px solid rgba(95, 131, 255, 0.15); padding: 0 0.5rem;">
         <button class="tab-btn active" data-tab="exercises" style="padding: 0.65rem 1.2rem; border: none; background: none; font-size: 0.95rem; font-weight: 600; color: #5d7197; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; font-family: 'Outfit', sans-serif;">
-          ?? Exercises
+          &#128221; Exercises
         </button>
         <button class="tab-btn" data-tab="videos" style="padding: 0.65rem 1.2rem; border: none; background: none; font-size: 0.95rem; font-weight: 600; color: #5d7197; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; font-family: 'Outfit', sans-serif;">
-          ?? Videos
+          &#127909; Videos
         </button>
       </div>
     </div>
@@ -879,7 +879,7 @@
       closeBtn.type = 'button';
       closeBtn.className = 'video-inline-close';
       closeBtn.setAttribute('aria-label', 'Stop video');
-      closeBtn.textContent = '×';
+      closeBtn.textContent = 'Ã—';
       inlinePlayer.appendChild(closeBtn);
 
       let inlineIframe = null;
@@ -961,7 +961,7 @@
         document.getElementById('courseName').textContent = course.name;
         document.getElementById('courseTitle').textContent = course.name;
         document.getElementById('courseDesc').textContent = course.description || '';
-        document.getElementById('courseIcon').textContent = course.icon || '??';
+        document.getElementById('courseIcon').textContent = course.icon || '\u{1F4D6}';
         document.title = `${course.name} - Code Cloner`;
         if (lockedParam) {
           document.getElementById('courseProgress').textContent = 'Locked: Enroll to continue learning';
@@ -1011,7 +1011,7 @@
           const progress = data.progress || 0;
           const completed = data.completedExercises || 0;
           const total = data.totalExercises || 0;
-          enrollmentProgress.textContent = `Enrolled • ${progress}% (${completed}/${total})`;
+          enrollmentProgress.textContent = `Enrolled â€¢ ${progress}% (${completed}/${total})`;
 
           enrollBtn.style.display = 'inline-flex';
           enrollBtn.className = 'enroll-btn enrolled';
@@ -1074,7 +1074,7 @@
           categoryName: cat.name,
           courseId,
           courseName: course.name,
-          courseIcon: course.icon || '??',
+          courseIcon: course.icon || '\u{1F4D6}',
           courseDescription: course.description || '',
           enrolledAt: serverTimestamp(),
           lastAccessedAt: serverTimestamp(),
@@ -1155,7 +1155,7 @@
           if (courseProgress) courseProgress.textContent = '0/0 completed (0%)';
           grid.innerHTML = `
             <div class="empty-state">
-              <div class="empty-icon">??</div>
+              <div class="empty-icon">&#128221;</div>
               <h3>No exercises yet</h3>
               <p>Exercises will be added soon!</p>
             </div>
@@ -1181,11 +1181,11 @@
               ${exercise.topicName ? `<span class="exercise-topic">${exercise.topicName}</span>` : ''}
               <h3 class="exercise-title">${exercise.title}</h3>
               <div class="exercise-meta">
-                <span>??? ${exercise.views} views</span>
+                <span>\u{1F441} ${exercise.views} views</span>
               </div>
               ${!isEnrolled ? '<div class="exercise-lock-note">Enroll to unlock this exercise</div>' : ''}
             </div>
-            <span class="exercise-arrow ${completed ? 'completed' : ''} ${!isEnrolled ? 'locked' : ''}" aria-hidden="true">${!isEnrolled ? '??' : (completed ? '?' : '?')}</span>
+            <span class="exercise-arrow ${completed ? 'completed' : ''} ${!isEnrolled ? 'locked' : ''}" aria-hidden="true">${!isEnrolled ? '\u{1F512}' : (completed ? '\u{2713}' : '\u{2192}')}</span>
           `;
           if (!isEnrolled) {
             card.addEventListener('click', handleLockedExerciseClick);
@@ -1209,7 +1209,7 @@
         if (courseProgress) courseProgress.textContent = 'Progress unavailable';
         grid.innerHTML = `
           <div class="empty-state">
-            <div class="empty-icon">?</div>
+            <div class="empty-icon">&#9888;</div>
             <h3>Error loading exercises</h3>
             <p>${error.message}</p>
           </div>
@@ -1275,7 +1275,7 @@
         if (!videosList.length) {
           grid.innerHTML = `
             <div class="empty-state">
-              <div class="empty-icon">??</div>
+              <div class="empty-icon">&#128221;</div>
               <h3>No videos yet</h3>
               <p>Videos will be added soon!</p>
             </div>
@@ -1337,14 +1337,14 @@
           if (video.duration) {
             const durationBadge = document.createElement('span');
             durationBadge.className = 'video-badge';
-            durationBadge.textContent = `?? ${video.duration}`;
+            durationBadge.textContent = `\u{23F1} ${video.duration}`;
             meta.appendChild(durationBadge);
           }
 
           if (video.relatedToExercise) {
             const relatedBadge = document.createElement('span');
             relatedBadge.className = 'video-badge related';
-            relatedBadge.textContent = '?? Related to Exercise';
+            relatedBadge.textContent = '\u{1F517} Related to Exercise';
             meta.appendChild(relatedBadge);
           }
 
@@ -1366,7 +1366,7 @@
         console.error('Error loading videos:', error);
         grid.innerHTML = `
           <div class="empty-state">
-            <div class="empty-icon">?</div>
+            <div class="empty-icon">&#9888;</div>
             <h3>Error loading videos</h3>
             <p>${error.message}</p>
           </div>
