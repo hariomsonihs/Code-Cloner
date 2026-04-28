@@ -112,12 +112,8 @@ function getCachedUniversalSearch(query) {
 }
 
 function warmupIndexes() {
-  if (!state.indexReady && !state.loadingIndex) {
-    buildLearningIndex();
-  }
-  if (!state.contentIndexReady && !state.loadingContentIndex) {
-    buildContentIndex();
-  }
+  // Lazy load - only when user opens AI panel
+  return;
 }
 
 function isGreetingOrSmallTalk(query) {
@@ -275,11 +271,11 @@ async function getUserAssistantContext() {
       return context;
     }
 
-    const enrollmentsSnap = await fsMod.getDocs(fsMod.collection(db, 'users', user.uid, 'enrollments'));
+    const enrollmentsSnap = await fsMod.getDocs(fsMod.query(fsMod.collection(db, 'users', user.uid, 'enrollments'), fsMod.limit(5)));
     const enrollments = enrollmentsSnap.docs.map((d) => d.data() || {});
     const topCourses = enrollments
       .sort((a, b) => Number(b.progress || 0) - Number(a.progress || 0))
-      .slice(0, 5)
+      .slice(0, 3)
       .map((course) => ({
         name: course.courseName || 'Untitled Course',
         progress: Number(course.progress || 0),
@@ -693,7 +689,7 @@ async function buildLearningIndex() {
   try {
     const { fsMod, db } = await getFirebaseContext();
 
-    const categoriesSnap = await fsMod.getDocs(fsMod.collection(db, 'learning_categories'));
+    const categoriesSnap = await fsMod.getDocs(fsMod.query(fsMod.collection(db, 'learning_categories'), fsMod.limit(10)));
     const items = [];
 
     for (const catDoc of categoriesSnap.docs) {
@@ -706,7 +702,7 @@ async function buildLearningIndex() {
         href: `courses.html?category=${encodeURIComponent(catDoc.id)}`
       });
 
-      const coursesSnap = await fsMod.getDocs(fsMod.collection(db, `learning_categories/${catDoc.id}/courses`));
+      const coursesSnap = await fsMod.getDocs(fsMod.query(fsMod.collection(db, `learning_categories/${catDoc.id}/courses`), fsMod.limit(5)));
       coursesSnap.docs.forEach((courseDoc) => {
         const course = courseDoc.data() || {};
         items.push({
@@ -737,7 +733,7 @@ async function buildContentIndex() {
     const items = [];
 
     for (const config of CONTENT_COLLECTIONS) {
-      const snap = await fsMod.getDocs(fsMod.collection(db, config.type));
+      const snap = await fsMod.getDocs(fsMod.query(fsMod.collection(db, config.type), fsMod.orderBy('createdAt', 'desc'), fsMod.limit(20)));
       snap.docs.forEach((docSnap) => {
         const data = docSnap.data() || {};
         const title = String(data[config.titleField] || data.title || 'Untitled').trim();
@@ -1118,12 +1114,21 @@ function initAssistant() {
   );
 
   initQuickActions(quickEl, inputEl, submitQuery);
-  warmupIndexes();
-  getUserAssistantContext();
-
+  
+  // Lazy load indexes only when panel opens
+  let indexesLoaded = false;
   toggle.addEventListener('click', () => {
     panel.classList.toggle('open');
-    if (panel.classList.contains('open')) inputEl.focus();
+    if (panel.classList.contains('open')) {
+      inputEl.focus();
+      if (!indexesLoaded) {
+        indexesLoaded = true;
+        setTimeout(() => {
+          buildLearningIndex();
+          buildContentIndex();
+        }, 500);
+      }
+    }
   });
 
   closeBtn.addEventListener('click', () => {
