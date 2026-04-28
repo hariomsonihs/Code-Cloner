@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import {
   collection,
-  onSnapshot,
+  getDocs,
   query,
   orderBy,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -437,24 +437,20 @@ grid.addEventListener("click", e => {
 });
 
 const liveQuery = query(collection(db, collectionName), orderBy("createdAt", "desc"));
-onSnapshot(
-  liveQuery,
-  (snapshot) => {
-    allDocs = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+getDocs(liveQuery).then((snapshot) => {
+  allDocs = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
 
-    if (liveStatus) {
-      liveStatus.textContent = `Live - ${allDocs.length} item${allDocs.length === 1 ? "" : "s"}`;
-    }
-
-    errorBox.innerHTML = "";
-    buildCategoryChips();
-    render();
-  },
-  (error) => {
-    if (liveStatus) liveStatus.textContent = "Connection error";
-    errorBox.innerHTML = `<div class="toast error">Firebase error: ${escapeHtml(error.message)}</div>`;
+  if (liveStatus) {
+    liveStatus.textContent = `${allDocs.length} item${allDocs.length === 1 ? "" : "s"}`;
   }
-);
+
+  errorBox.innerHTML = "";
+  buildCategoryChips();
+  render();
+}).catch((error) => {
+  if (liveStatus) liveStatus.textContent = "Connection error";
+  errorBox.innerHTML = `<div class="toast error">Firebase error: ${escapeHtml(error.message)}</div>`;
+});
 
 bindCodeModal();
 initShellNavigation();

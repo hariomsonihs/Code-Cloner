@@ -354,7 +354,7 @@ let activeFilter = "all";
 
 async function loadStats(uid) {
   const histRef = collection(db, "users", uid, "history");
-  const snap = await getDocs(histRef);
+  const snap = await getDocs(query(histRef, orderBy("viewedAt", "desc"), limit(100)));
   allHistoryItems = snap.docs.map(d => d.data());
 
   const counts = { articles: 0, tips: 0, facts: 0, projects: 0, resources: 0 };
