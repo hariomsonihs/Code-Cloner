@@ -921,7 +921,7 @@ function extractTopic(query) {
   return lower.replace(/(create|make|give|a|an|the|learning|roadmap|plan)/g, '').trim();
 }
 
-function answerQuery(query) {
+async function answerQuery(query) {
   const q = normalize(query);
   if (!q) {
     return { text: `**What can I help you with?**\n\n- 🔍 Search articles, tips, facts\n- 🎓 Find courses & tutorials\n- 🗺️ Create learning roadmaps\n- 📊 Track your progress\n\nJust type your question!`, links: [] };
