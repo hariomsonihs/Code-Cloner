@@ -1,0 +1,319 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>About Code Cloner | Developer, Features, App & Contact</title>
+  <meta name="description" content="Learn about Code Cloner, its features, use cases, developer details, app download link, social profiles, contact options, and current version information.">
+  <meta name="keywords" content="about code cloner, code cloner features, coding platform, developer profile, app download, linkedin, instagram, programming learning hub">
+  <meta name="author" content="Hariom Kumar">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://code-cloner.vercel.app/about.html">
+  <meta property="og:title" content="About Code Cloner | Developer, Features, App & Contact">
+  <meta property="og:description" content="Everything about Code Cloner: purpose, uses, features, developer info, app link, and contact details.">
+  <meta property="og:image" content="https://code-cloner.vercel.app/code_cloner_logo.jpeg">
+
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://code-cloner.vercel.app/about.html">
+  <meta property="twitter:title" content="About Code Cloner | Developer, Features, App & Contact">
+  <meta property="twitter:description" content="Everything about Code Cloner: purpose, uses, features, developer info, app link, and contact details.">
+  <meta property="twitter:image" content="https://code-cloner.vercel.app/code_cloner_logo.jpeg">
+
+  <link rel="canonical" href="https://code-cloner.vercel.app/about.html">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="/env-config.js"></script>
+  <link rel="stylesheet" href="app.css">
+  <style>
+    .about-wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .about-hero {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: linear-gradient(140deg, rgba(95,142,255,0.14), rgba(60,200,167,0.14));
+      padding: clamp(1rem, 3vw, 2rem);
+      box-shadow: var(--shadow);
+    }
+
+    .about-hero h1 {
+      margin: 0.4rem 0 0.5rem;
+      font-size: clamp(1.5rem, 3.8vw, 2.3rem);
+      line-height: 1.2;
+    }
+
+    .about-hero p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 760px;
+      line-height: 1.7;
+    }
+
+    .about-chip-row {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .about-chip {
+      border: 1px solid rgba(95, 142, 255, 0.28);
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 999px;
+      padding: 0.36rem 0.72rem;
+      font-size: 0.78rem;
+      color: #2c4672;
+      font-weight: 600;
+    }
+
+    .about-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .about-card {
+      grid-column: span 12;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface-strong);
+      box-shadow: 0 14px 30px rgba(49, 76, 122, 0.12);
+      padding: clamp(0.9rem, 2vw, 1.2rem);
+    }
+
+    .about-card h2 {
+      margin: 0 0 0.55rem;
+      font-size: 1.1rem;
+    }
+
+    /* This page does not run home reveal observer, so force visibility */
+    .about-wrap .reveal {
+      opacity: 1 !important;
+      transform: none !important;
+      visibility: visible !important;
+    }
+
+    .about-card p,
+    .about-card li {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .about-list {
+      margin: 0;
+      padding-left: 1.15rem;
+    }
+
+    .feature-grid {
+      display: grid;
+      gap: 0.7rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .feature-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 0.65rem 0.75rem;
+      font-size: 0.88rem;
+      color: #2b456f;
+    }
+
+    .developer-row,
+    .contact-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.7rem;
+    }
+
+    .link-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.36rem;
+      padding: 0.5rem 0.78rem;
+      border-radius: 999px;
+      background: rgba(95, 142, 255, 0.12);
+      border: 1px solid rgba(95, 142, 255, 0.25);
+      color: #233b63;
+      font-weight: 600;
+      font-size: 0.82rem;
+    }
+
+    .link-pill:hover {
+      background: rgba(95, 142, 255, 0.2);
+    }
+
+    .version-box {
+      display: grid;
+      gap: 0.4rem;
+      font-size: 0.88rem;
+      color: #2f4b79;
+    }
+
+    @media (min-width: 920px) {
+      .span-6 { grid-column: span 6; }
+      .span-4 { grid-column: span 4; }
+      .span-8 { grid-column: span 8; }
+    }
+
+    @media (max-width: 680px) {
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body data-page="about">
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+  <div class="bg-orb orb-c"></div>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="side-drawer" id="sideDrawer" aria-label="Mobile navigation drawer">
+    <div class="drawer-top">
+      <div class="brand"><img src="/code_cloner_logo.jpeg" alt="Logo" class="brand-logo"><div><strong>Code Cloner</strong><small>About</small></div></div>
+      <button class="icon-btn" id="closeDrawer" aria-label="Close menu"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="drawer-section-label">Navigation</div>
+    <nav class="drawer-nav">
+      <a href="index.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Home</a>
+      <a href="articles.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Articles</a>
+      <a href="learning.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Learning</a>
+      <a href="projects.html" class="nav-link"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Projects</a>
+      <a href="resources.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Resources</a>
+      <a href="about.html" class="nav-link active"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <a class="brand" href="index.html"><img src="/code_cloner_logo.jpeg" alt="Logo" class="brand-logo"><div><strong>Code Cloner</strong><small>About</small></div></a>
+    <nav class="desktop-nav" aria-label="Primary navigation">
+      <a href="index.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Home</a>
+      <a href="articles.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>Articles</a>
+      <a href="learning.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Learning</a>
+      <a href="projects.html" class="nav-link"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Projects</a>
+      <a href="resources.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Resources</a>
+      <a href="about.html" class="nav-link active"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
+    </nav>
+    <button class="icon-btn menu-btn" id="openDrawer" aria-label="Open menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </header>
+
+  <main class="app-shell about-wrap">
+    <section class="about-hero reveal">
+      <p class="eyebrow">About Code Cloner</p>
+      <h1>One place to learn programming, practice smarter, and build consistently.</h1>
+      <p>Code Cloner is a practical coding learning platform built to make programming content easy to access and apply. It combines articles, tips, exercises, projects, facts, and curated resources in a single clean workflow.</p>
+      <div class="about-chip-row">
+        <span class="about-chip">Version 2.2.0</span>
+        <span class="about-chip">Updated: 28 April 2026</span>
+        <span class="about-chip">Platform: Web + Android APK</span>
+      </div>
+    </section>
+
+    <section class="about-grid">
+      <article class="about-card span-6 reveal">
+        <h2>What It Is</h2>
+        <p>Code Cloner helps learners and developers study with structure. Instead of jumping between random websites, users get organized learning paths and real practice material in one ecosystem.</p>
+      </article>
+
+      <article class="about-card span-6 reveal">
+        <h2>Primary Uses</h2>
+        <ul class="about-list">
+          <li>Learn programming concepts with readable content.</li>
+          <li>Practice topic-wise coding exercises and track progress.</li>
+          <li>Explore project ideas with source-focused learning.</li>
+          <li>Use quick tips and resources during daily development work.</li>
+        </ul>
+      </article>
+
+      <article class="about-card span-8 reveal">
+        <h2>Core Features</h2>
+        <div class="feature-grid">
+          <div class="feature-item">Structured learning categories and courses</div>
+          <div class="feature-item">Course-wise exercises and progress tracking</div>
+          <div class="feature-item">Programming articles, tips, facts, and projects</div>
+          <div class="feature-item">Save/bookmark content for later reading</div>
+          <div class="feature-item">Powerful search across content sections</div>
+          <div class="feature-item">Mobile-friendly UI and Android app download</div>
+        </div>
+      </article>
+
+      <article class="about-card span-4 reveal">
+        <h2>Version & Status</h2>
+        <div class="version-box">
+          <div><strong>Current Version:</strong> 2.2.0</div>
+          <div><strong>Release Stage:</strong> Active</div>
+          <div><strong>Last Updated:</strong> April 28, 2026</div>
+          <div><strong>Maintained By:</strong> Hariom Kumar</div>
+        </div>
+      </article>
+
+      <article class="about-card span-6 reveal">
+        <h2>Developer</h2>
+        <p>Code Cloner is designed and built by <strong>Hariom Kumar</strong>, focused on making practical coding education simple, direct, and useful for real-world growth.</p>
+        <div class="developer-row">
+          <a class="link-pill" href="https://linkedin.com/in/hariomsonihs" target="_blank" rel="noopener">LinkedIn</a>
+          <a class="link-pill" href="https://instagram.com/hariomsonihs" target="_blank" rel="noopener">Instagram</a>
+          <a class="link-pill" href="https://github.com/hariomsonihs" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </article>
+
+      <article class="about-card span-6 reveal">
+        <h2>Contact & App</h2>
+        <p>For collaboration, feedback, or updates, connect directly via social profiles. You can also install the Android app from the direct download link below.</p>
+        <div class="contact-row">
+          <a class="link-pill" href="https://drive.google.com/uc?export=download&id=1AHsANCh92Kp5Zqkqj47bbsI9ZiDv6KwJ" target="_blank" rel="noopener">Download Android App</a>
+          <a class="link-pill" href="https://linkedin.com/in/hariomsonihs" target="_blank" rel="noopener">Contact on LinkedIn</a>
+          <a class="link-pill" href="https://instagram.com/hariomsonihs" target="_blank" rel="noopener">Message on Instagram</a>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Mobile quick menu">
+    <a href="index.html"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg><span>Home</span></a>
+    <a href="articles.html"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8 9h8M8 12h8M8 15h5"/></svg><span>Articles</span></a>
+    <a href="learning.html"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Learning</span></a>
+    <a href="projects.html"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4zM9 7V5h6v2"/></svg><span>Projects</span></a>
+    <a href="about.html" class="active"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>About</span></a>
+  </nav>
+
+  <script>
+    const openDrawer = document.getElementById('openDrawer');
+    const closeDrawer = document.getElementById('closeDrawer');
+    const drawer = document.getElementById('sideDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+
+    if (openDrawer) {
+      openDrawer.addEventListener('click', () => {
+        drawer.classList.add('open');
+        overlay.classList.add('show');
+      });
+    }
+
+    if (closeDrawer) {
+      closeDrawer.addEventListener('click', () => {
+        drawer.classList.remove('open');
+        overlay.classList.remove('show');
+      });
+    }
+
+    if (overlay) {
+      overlay.addEventListener('click', () => {
+        drawer.classList.remove('open');
+        overlay.classList.remove('show');
+      });
+    }
+  </script>
+  <script type="module" src="ai-assistant.js"></script>
+</body>
+</html>
