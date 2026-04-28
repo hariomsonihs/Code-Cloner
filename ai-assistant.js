@@ -59,6 +59,7 @@ const WEBSITE_DETAILS = {
 };
 
 const REMOTE_AI_ENDPOINT = '/api/ai-chat';
+const REMOTE_AI_ENDPOINTS = ['/api/ai-chat', '/api/ai-chat/'];
 const MAX_HISTORY = 8;
 
 function normalize(value) {
@@ -693,22 +694,26 @@ async function askRemoteAssistant(query) {
       }
     };
 
-    const response = await fetch(REMOTE_AI_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    for (const endpoint of REMOTE_AI_ENDPOINTS) {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    if (!response.ok) return null;
-    const data = await response.json();
-    if (!data || !data.answer) return null;
+      if (!response.ok) continue;
+      const data = await response.json();
+      if (!data || !data.answer) continue;
 
-    return {
-      text: String(data.answer),
-      intent: String(data.intent || 'chat'),
-      searchQuery: String(data.searchQuery || ''),
-      links: Array.isArray(data.links) ? data.links : []
-    };
+      return {
+        text: String(data.answer),
+        intent: String(data.intent || 'chat'),
+        searchQuery: String(data.searchQuery || ''),
+        links: Array.isArray(data.links) ? data.links : []
+      };
+    }
+
+    return null;
   } catch (error) {
     console.error('Remote AI unavailable, falling back to local logic:', error);
     return null;

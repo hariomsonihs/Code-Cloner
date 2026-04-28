@@ -29,12 +29,23 @@ function clampText(value, max = 3000) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Content-Type', 'application/json');
+
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return res.status(200).json({
+      ok: true,
+      message: 'CodeCloner AI endpoint is live. Use POST with { message, history, context }.'
+    });
+  }
+
   if (req.method === 'OPTIONS') {
     res.setHeader('Allow', 'POST, OPTIONS');
     return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'GET, HEAD, POST, OPTIONS');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -46,7 +57,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = req.body || {};
+    const body = typeof req.body === 'string' ? safeJsonParse(req.body) || {} : (req.body || {});
     const userMessage = clampText(body.message, 1500);
     const history = Array.isArray(body.history) ? body.history : [];
     const context = body.context || {};
