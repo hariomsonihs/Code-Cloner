@@ -64,6 +64,90 @@ const REMOTE_AI_ENDPOINTS = ['/api/ai-chat', '/api/ai-chat/'];
 const MAX_HISTORY = 8;
 const USER_CONTEXT_TTL_MS = 45 * 1000;
 
+function getCurrentPageName() {
+  const page = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  return page || 'index.html';
+}
+
+function buildFooterLinkItems(links, currentPage) {
+  return links
+    .map((link) => {
+      const isActive = link.href.toLowerCase() === currentPage;
+      const label = isActive ? `${link.label} (Current)` : link.label;
+      return `<li><a href="${link.href}" ${isActive ? 'aria-current="page"' : ''}>${label}</a></li>`;
+    })
+    .join('');
+}
+
+function injectSiteFooter() {
+  if (document.querySelector('.site-footer')) return;
+
+  const currentPage = getCurrentPageName();
+  const primaryLinks = [
+    { label: 'Home', href: 'index.html' },
+    { label: 'Learning Hub', href: 'learning.html' },
+    { label: 'Courses', href: 'courses.html' },
+    { label: 'Articles', href: 'articles.html' }
+  ];
+  const usefulLinks = [
+    { label: 'Topics', href: 'topics.html' },
+    { label: 'Exercises', href: 'exercises.html' },
+    { label: 'Projects', href: 'projects.html' },
+    { label: 'Resources', href: 'resources.html' },
+    { label: 'Search', href: 'search.html' },
+    { label: 'Saved', href: 'saved.html' }
+  ];
+  const companyLinks = [
+    { label: 'About', href: 'about.html' },
+    { label: 'Profile', href: 'profile.html' },
+    { label: 'Tips & Tricks', href: 'tips.html' },
+    { label: 'Facts', href: 'facts.html' },
+    { label: 'Contact Developer', href: 'about.html' },
+    { label: 'Version & Updates', href: 'about.html' }
+  ];
+
+  const footer = document.createElement('footer');
+  footer.className = 'site-footer';
+  footer.setAttribute('role', 'contentinfo');
+  footer.innerHTML = `
+    <div class="site-footer-grid">
+      <div class="site-footer-col">
+        <h2 class="site-footer-title">Code Cloner</h2>
+        <p class="site-footer-text">Practice-focused coding platform with learning paths, exercises, articles, projects, and curated resources.</p>
+      </div>
+      <div class="site-footer-col">
+        <h3>Quick Links</h3>
+        <ul class="site-footer-links">${buildFooterLinkItems(primaryLinks, currentPage)}</ul>
+      </div>
+      <div class="site-footer-col">
+        <h3>Explore More</h3>
+        <ul class="site-footer-links">${buildFooterLinkItems(usefulLinks, currentPage)}</ul>
+      </div>
+      <div class="site-footer-col">
+        <h3>About & Connect</h3>
+        <ul class="site-footer-links">${buildFooterLinkItems(companyLinks, currentPage)}</ul>
+      </div>
+    </div>
+    <div class="site-footer-meta">
+      <div class="site-footer-socials">
+        <a class="site-footer-pill" href="https://linkedin.com/in/hariomsonihs" target="_blank" rel="noopener">LinkedIn</a>
+        <a class="site-footer-pill" href="https://instagram.com/hariomsonihs" target="_blank" rel="noopener">Instagram</a>
+        <a class="site-footer-pill" href="https://github.com/hariomsonihs" target="_blank" rel="noopener">GitHub</a>
+        <a class="site-footer-pill" href="https://drive.google.com/uc?export=download&id=1ke4T0rsmXHIUNlYQmNymUshvRZb7_Lfp" target="_blank" rel="noopener">Android App</a>
+      </div>
+      <p class="site-footer-credit">Built by Hariom Kumar | Version 1.0</p>
+    </div>
+  `;
+
+  const anchor = document.querySelector('.bottom-nav') || document.querySelector('script[src*="ai-assistant.js"]');
+  if (anchor?.parentNode) {
+    anchor.parentNode.insertBefore(footer, anchor);
+    return;
+  }
+
+  document.body.appendChild(footer);
+}
+
 function normalize(value) {
   return String(value || '').toLowerCase().trim();
 }
@@ -1056,6 +1140,7 @@ function initQuickActions(quickEl, inputEl, submitHandler) {
 function initAssistant() {
   if (window.__ccAiAssistantInit) return;
   window.__ccAiAssistantInit = true;
+  injectSiteFooter();
 
   injectStyles();
   const ui = buildUI();

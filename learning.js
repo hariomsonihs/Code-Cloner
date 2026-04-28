@@ -183,3 +183,7 @@ if (overlay) {
 
 setupLearningSearch();
 loadCategories();
+
+// Initialize reveal animations for footer
+import { initRevealAnimations } from './ui.js';
+initRevealAnimations();
