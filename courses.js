@@ -47,6 +47,50 @@ function normalizeText(value) {
   return String(value ?? '').toLowerCase().trim();
 }
 
+function upsertMetaTag(attr, key, content) {
+  if (!content) return;
+  let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute(attr, key);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', content);
+}
+
+function upsertCanonical(url) {
+  if (!url) return;
+  let canonicalEl = document.head.querySelector('link[rel="canonical"]');
+  if (!canonicalEl) {
+    canonicalEl = document.createElement('link');
+    canonicalEl.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonicalEl);
+  }
+  canonicalEl.setAttribute('href', url);
+}
+
+function setPageSeo({ title, description, keywords }) {
+  const absoluteUrl = window.location.href;
+
+  if (title) {
+    document.title = title;
+    upsertMetaTag('property', 'og:title', title);
+    upsertMetaTag('property', 'twitter:title', title);
+  }
+  if (description) {
+    upsertMetaTag('name', 'description', description);
+    upsertMetaTag('property', 'og:description', description);
+    upsertMetaTag('property', 'twitter:description', description);
+  }
+  if (keywords) {
+    upsertMetaTag('name', 'keywords', keywords);
+  }
+
+  upsertMetaTag('property', 'og:url', absoluteUrl);
+  upsertMetaTag('property', 'twitter:url', absoluteUrl);
+  upsertCanonical(absoluteUrl);
+}
+
 function isAllCoursesMode() {
   return !categoryId;
 }
@@ -412,7 +456,11 @@ async function loadPageHeader() {
     document.getElementById('categoryTitle').textContent = 'All Courses Library';
     document.getElementById('categoryDesc').textContent = 'Browse every category and search any course from one place.';
     document.getElementById('categoryIcon').textContent = '📚';
-    document.title = 'All Courses - Code Cloner';
+    setPageSeo({
+      title: 'All Coding Courses by Category | Code Cloner Learning Hub',
+      description: 'Browse all coding courses across categories and skill levels with structured learning paths and hands-on practice exercises.',
+      keywords: 'all coding courses, programming course catalog, learn coding categories, code cloner courses'
+    });
     return;
   }
 
@@ -429,7 +477,15 @@ async function loadPageHeader() {
     document.getElementById('categoryTitle').textContent = cat.name;
     document.getElementById('categoryDesc').textContent = cat.description || '';
     document.getElementById('categoryIcon').textContent = cat.icon || 'C';
-    document.title = `${cat.name} - Code Cloner`;
+    const categoryName = cat.name || 'Coding Courses';
+    const categoryDescription = cat.description
+      ? `${cat.description} Explore structured courses and practical exercises on Code Cloner.`
+      : `Explore ${categoryName} courses with practical coding exercises on Code Cloner Learning Hub.`;
+    setPageSeo({
+      title: `${categoryName} Courses | Code Cloner Learning Hub`,
+      description: categoryDescription,
+      keywords: `${categoryName.toLowerCase()} courses, ${categoryName.toLowerCase()} learning path, coding practice, code cloner`
+    });
   } catch (error) {
     console.error('Error loading category:', error);
     window.location.href = 'learning.html';

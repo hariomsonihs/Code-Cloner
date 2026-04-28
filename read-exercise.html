@@ -3,7 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Exercise - Code Cloner</title>
+  <title>Read Exercise Notes & Solutions | Code Cloner Learning Hub</title>
+  <meta name="description" content="Read exercise notes, theory, and coding solutions in a distraction-free format. Learn concepts deeply with structured reading content on Code Cloner.">
+  <meta name="keywords" content="exercise notes, coding solutions, programming theory, read coding exercise, developer notes, code cloner learning notes">
+  <meta name="author" content="Hariom Kumar">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://code-cloner.vercel.app/read-exercise.html">
+  <meta property="og:title" content="Read Exercise Notes & Solutions | Code Cloner Learning Hub">
+  <meta property="og:description" content="Read exercise notes, theory, and coding solutions in a clean learning format.">
+  <meta property="og:image" content="https://code-cloner.vercel.app/code_cloner_logo.jpeg">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://code-cloner.vercel.app/read-exercise.html">
+  <meta property="twitter:title" content="Read Exercise Notes & Solutions | Code Cloner Learning Hub">
+  <meta property="twitter:description" content="Read exercise notes and coding solutions in a clean format.">
+  <meta property="twitter:image" content="https://code-cloner.vercel.app/code_cloner_logo.jpeg">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://code-cloner.vercel.app/read-exercise.html">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@300;400;600;700&family=Roboto+Mono:wght@400;500;700&family=Dancing+Script:wght@400;700&family=Pacifico&family=Caveat:wght@400;700&family=Bebas+Neue&family=Raleway:wght@300;400;600;700&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
@@ -229,6 +250,49 @@
     let allExercises = [];
     let currentIndex = 0;
 
+    function upsertMetaTag(attr, key, content) {
+      if (!content) return;
+      let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    }
+
+    function upsertCanonical(url) {
+      if (!url) return;
+      let canonicalEl = document.head.querySelector('link[rel="canonical"]');
+      if (!canonicalEl) {
+        canonicalEl = document.createElement('link');
+        canonicalEl.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalEl);
+      }
+      canonicalEl.setAttribute('href', url);
+    }
+
+    function setPageSeo({ title, description, keywords }) {
+      const absoluteUrl = window.location.href;
+      if (title) {
+        document.title = title;
+        upsertMetaTag('property', 'og:title', title);
+        upsertMetaTag('property', 'twitter:title', title);
+      }
+      if (description) {
+        upsertMetaTag('name', 'description', description);
+        upsertMetaTag('property', 'og:description', description);
+        upsertMetaTag('property', 'twitter:description', description);
+      }
+      if (keywords) {
+        upsertMetaTag('name', 'keywords', keywords);
+      }
+
+      upsertMetaTag('property', 'og:url', absoluteUrl);
+      upsertMetaTag('property', 'twitter:url', absoluteUrl);
+      upsertCanonical(absoluteUrl);
+    }
+
     async function loadExercise() {
       if (!categoryId || !courseId || !exerciseId) {
         window.location.href = 'learning.html';
@@ -247,7 +311,11 @@
         document.getElementById('exerciseTitle').textContent = exercise.title;
         document.getElementById('viewCount').textContent = exercise.views || 0;
         document.getElementById('exerciseContent').innerHTML = exercise.content || '<p>No content available</p>';
-        document.title = `${exercise.title} - Code Cloner`;
+        setPageSeo({
+          title: `${exercise.title} Notes | Code Cloner Learning Hub`,
+          description: `Read notes and theory for "${exercise.title}" on Code Cloner. Learn coding concepts in a clean, focused reading format.`,
+          keywords: `${exercise.title.toLowerCase()} notes, coding theory, exercise explanation, programming concepts, code cloner`
+        });
 
         await updateDoc(doc(db, `learning_categories/${categoryId}/courses/${courseId}/exercises`, exerciseId), {
           views: increment(1)

@@ -11,6 +11,12 @@ Disallow: /Code Cloner Admin/
 # Allow all content pages
 Allow: /index.html
 Allow: /articles.html
+Allow: /learning.html
+Allow: /courses.html
+Allow: /topics.html
+Allow: /exercises.html
+Allow: /exercise.html
+Allow: /read-exercise.html
 Allow: /tips.html
 Allow: /facts.html
 Allow: /projects.html

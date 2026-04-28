@@ -3,7 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Exercises - Code Cloner</title>
+  <title>Coding Exercises & Practice Videos | Code Cloner</title>
+  <meta name="description" content="Practice coding exercises and learning videos course-wise. Track progress, enroll in learning paths, and improve problem-solving skills with Code Cloner.">
+  <meta name="keywords" content="coding exercises, programming practice, coding videos, learn by doing, coding assignments, course exercises, code cloner practice">
+  <meta name="author" content="Hariom Kumar">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://code-cloner.vercel.app/exercises.html">
+  <meta property="og:title" content="Coding Exercises & Practice Videos | Code Cloner">
+  <meta property="og:description" content="Practice coding exercises and course-wise learning videos with progress tracking.">
+  <meta property="og:image" content="https://code-cloner.vercel.app/code_cloner_logo.jpeg">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://code-cloner.vercel.app/exercises.html">
+  <meta property="twitter:title" content="Coding Exercises & Practice Videos | Code Cloner">
+  <meta property="twitter:description" content="Course-wise coding practice with videos and progress tracking.">
+  <meta property="twitter:image" content="https://code-cloner.vercel.app/code_cloner_logo.jpeg">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://code-cloner.vercel.app/exercises.html">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -643,6 +664,49 @@
     let currentCourse = null;
     let allExercises = [];
 
+    function upsertMetaTag(attr, key, content) {
+      if (!content) return;
+      let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    }
+
+    function upsertCanonical(url) {
+      if (!url) return;
+      let canonicalEl = document.head.querySelector('link[rel="canonical"]');
+      if (!canonicalEl) {
+        canonicalEl = document.createElement('link');
+        canonicalEl.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalEl);
+      }
+      canonicalEl.setAttribute('href', url);
+    }
+
+    function setPageSeo({ title, description, keywords }) {
+      const absoluteUrl = window.location.href;
+      if (title) {
+        document.title = title;
+        upsertMetaTag('property', 'og:title', title);
+        upsertMetaTag('property', 'twitter:title', title);
+      }
+      if (description) {
+        upsertMetaTag('name', 'description', description);
+        upsertMetaTag('property', 'og:description', description);
+        upsertMetaTag('property', 'twitter:description', description);
+      }
+      if (keywords) {
+        upsertMetaTag('name', 'keywords', keywords);
+      }
+
+      upsertMetaTag('property', 'og:url', absoluteUrl);
+      upsertMetaTag('property', 'twitter:url', absoluteUrl);
+      upsertCanonical(absoluteUrl);
+    }
+
     function parseOrder(value) {
       const numeric = Number(value);
       return Number.isFinite(numeric) ? numeric : 0;
@@ -962,7 +1026,16 @@
         document.getElementById('courseTitle').textContent = course.name;
         document.getElementById('courseDesc').textContent = course.description || '';
         document.getElementById('courseIcon').textContent = course.icon || '\u{1F4D6}';
-        document.title = `${course.name} - Code Cloner`;
+        const categoryName = cat.name || 'Programming';
+        const courseName = course.name || 'Course';
+        const courseDescription = course.description
+          ? `${course.description} Practice this course with coding exercises and videos on Code Cloner.`
+          : `Practice ${courseName} with exercises and videos on Code Cloner Learning Hub.`;
+        setPageSeo({
+          title: `${courseName} Exercises & Videos | Code Cloner`,
+          description: courseDescription,
+          keywords: `${courseName.toLowerCase()} exercises, ${categoryName.toLowerCase()} practice, coding videos, course assignments, code cloner`
+        });
         if (lockedParam) {
           document.getElementById('courseProgress').textContent = 'Locked: Enroll to continue learning';
         }

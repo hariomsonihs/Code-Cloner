@@ -9,6 +9,49 @@ const urlParams = new URLSearchParams(window.location.search);
 const categoryId = urlParams.get('category');
 const courseId = urlParams.get('course');
 
+function upsertMetaTag(attr, key, content) {
+  if (!content) return;
+  let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute(attr, key);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', content);
+}
+
+function upsertCanonical(url) {
+  if (!url) return;
+  let canonicalEl = document.head.querySelector('link[rel="canonical"]');
+  if (!canonicalEl) {
+    canonicalEl = document.createElement('link');
+    canonicalEl.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonicalEl);
+  }
+  canonicalEl.setAttribute('href', url);
+}
+
+function setPageSeo({ title, description, keywords }) {
+  const absoluteUrl = window.location.href;
+  if (title) {
+    document.title = title;
+    upsertMetaTag('property', 'og:title', title);
+    upsertMetaTag('property', 'twitter:title', title);
+  }
+  if (description) {
+    upsertMetaTag('name', 'description', description);
+    upsertMetaTag('property', 'og:description', description);
+    upsertMetaTag('property', 'twitter:description', description);
+  }
+  if (keywords) {
+    upsertMetaTag('name', 'keywords', keywords);
+  }
+
+  upsertMetaTag('property', 'og:url', absoluteUrl);
+  upsertMetaTag('property', 'twitter:url', absoluteUrl);
+  upsertCanonical(absoluteUrl);
+}
+
 function sortDocsByOrder(docs) {
   return [...docs].sort((a, b) => {
     const orderA = Number(a.data()?.order ?? 0);
@@ -42,7 +85,16 @@ async function loadCourse() {
     document.getElementById('courseDesc').textContent = course.description || '';
     document.querySelector('.course-icon').textContent = course.icon || '📖';
     document.getElementById('courseDuration').textContent = course.duration || 0;
-    document.title = `${course.name} - Code Cloner`;
+    const categoryName = cat.name || 'Programming';
+    const courseName = course.name || 'Course';
+    const description = course.description
+      ? `${course.description} Follow topic-wise exercises and study plan on Code Cloner.`
+      : `Explore the ${courseName} topic roadmap, lessons, and exercises on Code Cloner Learning Hub.`;
+    setPageSeo({
+      title: `${courseName} Topics & Roadmap | Code Cloner`,
+      description,
+      keywords: `${categoryName.toLowerCase()} topics, ${courseName.toLowerCase()} roadmap, coding exercises, course syllabus, code cloner`
+    });
 
   } catch (error) {
     console.error('Error loading course:', error);

@@ -43,6 +43,49 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function upsertMetaTag(attr, key, content) {
+  if (!content) return;
+  let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute(attr, key);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', content);
+}
+
+function upsertCanonical(url) {
+  if (!url) return;
+  let canonicalEl = document.head.querySelector('link[rel="canonical"]');
+  if (!canonicalEl) {
+    canonicalEl = document.createElement('link');
+    canonicalEl.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonicalEl);
+  }
+  canonicalEl.setAttribute('href', url);
+}
+
+function setPageSeo({ title, description, keywords }) {
+  const absoluteUrl = window.location.href;
+  if (title) {
+    document.title = title;
+    upsertMetaTag('property', 'og:title', title);
+    upsertMetaTag('property', 'twitter:title', title);
+  }
+  if (description) {
+    upsertMetaTag('name', 'description', description);
+    upsertMetaTag('property', 'og:description', description);
+    upsertMetaTag('property', 'twitter:description', description);
+  }
+  if (keywords) {
+    upsertMetaTag('name', 'keywords', keywords);
+  }
+
+  upsertMetaTag('property', 'og:url', absoluteUrl);
+  upsertMetaTag('property', 'twitter:url', absoluteUrl);
+  upsertCanonical(absoluteUrl);
+}
+
 function sortDocsByOrder(docs) {
   return [...docs].sort((a, b) => parseOrder(a.data()?.order) - parseOrder(b.data()?.order));
 }
@@ -647,7 +690,13 @@ async function renderCurrentExercise() {
 
   const exercise = allExercises[currentIndex];
   document.getElementById('exerciseName').textContent = exercise.title;
-  document.title = `${exercise.title} - Code Cloner`;
+  const courseName = courseDetails.courseName || 'Coding Course';
+  const categoryName = courseDetails.categoryName || 'Programming';
+  setPageSeo({
+    title: `${exercise.title} | ${courseName} Exercise | Code Cloner`,
+    description: `Practice "${exercise.title}" from the ${courseName} learning path on Code Cloner. Improve your ${categoryName.toLowerCase()} skills with hands-on coding.`,
+    keywords: `${exercise.title.toLowerCase()}, ${courseName.toLowerCase()} exercise, coding practice, ${categoryName.toLowerCase()} tutorial, code cloner`
+  });
 
   content.innerHTML = `
     <h1>${escapeHtml(exercise.title)}</h1>
