@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8"/>
@@ -133,7 +133,7 @@
         <a href="resources.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Resources</a>
         <a href="search.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search</a>
         <a href="about.html" class="nav-link js-nav-link"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
-        <a href="saved.html" class="nav-link js-nav-link saved-drawer-link"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>🔖 Saved <span class="bm-count-badge" style="margin-left:auto;background:var(--brand-2);color:#fff;border-radius:999px;padding:.1rem .45rem;font-size:.72rem;font-weight:700;display:none"></span></a>
+        <a href="saved.html" class="nav-link js-nav-link saved-drawer-link"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>ðŸ”– Saved <span class="bm-count-badge" style="margin-left:auto;background:var(--brand-2);color:#fff;border-radius:999px;padding:.1rem .45rem;font-size:.72rem;font-weight:700;display:none"></span></a>
       </nav>
       <div class="drawer-footer">
         <div class="drawer-footer-label">Find me on</div>
@@ -156,27 +156,26 @@
         <a href="projects.html" class="nav-link"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Projects</a>
         <a href="resources.html" class="nav-link"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Resources</a>
         <a href="search.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search</a>
-        <a href="about.html" class="nav-link"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>About</a>
       </nav>
       <button class="icon-btn menu-btn" id="openDrawer"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     </header>
 
     <main class="app-shell">
       <div class="search-hero reveal">
-        <h1>🔍 Search Everything</h1>
-        <p>Search across articles, tips, facts, projects, resources and courses — all at once</p>
+        <h1>ðŸ” Search Everything</h1>
+        <p>Search across articles, tips, facts, projects, resources and courses â€” all at once</p>
         <div class="search-input-wrap">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="globalSearch" type="search" placeholder="Type to search... e.g. JavaScript, CSS, Python" autofocus/>
         </div>
         <div class="type-filters">
           <button class="filter-chip active" data-type="all">All</button>
-          <button class="filter-chip" data-type="articles">📄 Articles</button>
-          <button class="filter-chip" data-type="tips">💡 Tips</button>
-          <button class="filter-chip" data-type="facts">🔍 Facts</button>
-          <button class="filter-chip" data-type="projects">🚀 Projects</button>
-          <button class="filter-chip" data-type="resources">🔗 Resources</button>
-          <button class="filter-chip" data-type="courses">📚 Courses</button>
+          <button class="filter-chip" data-type="articles">ðŸ“„ Articles</button>
+          <button class="filter-chip" data-type="tips">ðŸ’¡ Tips</button>
+          <button class="filter-chip" data-type="facts">ðŸ” Facts</button>
+          <button class="filter-chip" data-type="projects">ðŸš€ Projects</button>
+          <button class="filter-chip" data-type="resources">ðŸ”— Resources</button>
+          <button class="filter-chip" data-type="courses">ðŸ“š Courses</button>
         </div>
       </div>
 
@@ -209,7 +208,7 @@
       import { initNotifications } from "./notifications.js";
       initShellNavigation(); initRevealAnimations(); initNotifications();
 
-      const typeIcon   = { articles:"📄", tips:"💡", facts:"🔍", projects:"🚀", resources:"🔗", courses:"📚" };
+      const typeIcon   = { articles:"ðŸ“„", tips:"ðŸ’¡", facts:"ðŸ”", projects:"ðŸš€", resources:"ðŸ”—", courses:"ðŸ“š" };
       const typeBanner = { articles:"banner-article", tips:"banner-tip", facts:"banner-fact", projects:"banner-project", resources:"banner-resource", courses:"banner-article" };
 
       let allItems = [], activeType = "all";
@@ -283,7 +282,7 @@
                 ${item.category?`<span class="badge badge-muted">${escapeHtml(item.category)}</span>`:""}
               </div>
               <h3 style="font-size:.9rem;margin:0 0 .3rem;line-height:1.3">${escapeHtml(item.title)}</h3>
-              ${desc?`<p class="card-desc" style="-webkit-line-clamp:2">${escapeHtml(desc)}…</p>`:""}
+              ${desc?`<p class="card-desc" style="-webkit-line-clamp:2">${escapeHtml(desc)}â€¦</p>`:""}
             </div>
           </a>`;
         }).join("");
