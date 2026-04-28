@@ -78,6 +78,7 @@ export default async function handler(req, res) {
       brand: context.brand || 'CodeCloner AI',
       website: context.website || {},
       developer: context.developer || {},
+      userContext: context.userContext || {},
       currentPage: context.currentPage || {},
       candidates: Array.isArray(context.candidates) ? context.candidates.slice(0, 8) : []
     });
@@ -85,9 +86,12 @@ export default async function handler(req, res) {
     const systemPrompt = [
       'You are CodeCloner AI, the assistant for the Code Cloner website.',
       'You can chat naturally in Hinglish/English.',
+      'Keep answers short, clear, and practical unless user asks for detailed explanation.',
       'If user asks casual question, respond conversationally.',
       'If user is trying to find content, answer briefly and set intent to search/content/learning.',
       'Use website and developer context provided by user message.',
+      'Use userContext for profile/enrollment/progress/tracking support when available.',
+      'For enrollment help, suggest clear next actions inside learning/courses/profile pages.',
       'For developer queries, use provided developer details exactly.',
       'Return ONLY valid minified JSON with this shape:',
       '{"intent":"chat|search|content|learning|developer|website","answer":"string","searchQuery":"string","links":[{"label":"string","href":"string"}]}',
@@ -113,8 +117,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: DEFAULT_MODEL,
-        temperature: 0.2,
-        max_tokens: 500,
+        temperature: 0.15,
+        max_tokens: 320,
         messages
       })
     });

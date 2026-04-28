@@ -19,7 +19,9 @@ const state = {
   contentIndex: [],
   loadingContentIndex: false,
   firebaseCtx: null,
-  chatHistory: []
+  chatHistory: [],
+  userContextCache: null,
+  userContextCacheAt: 0
 };
 
 const SEARCH_STOP_WORDS = new Set([
@@ -58,9 +60,9 @@ const WEBSITE_DETAILS = {
   sections: ['Articles', 'Learning (Categories/Courses)', 'Tips & Tricks', 'Facts', 'Projects', 'Resources', 'Search', 'Saved', 'Profile']
 };
 
-const REMOTE_AI_ENDPOINT = '/api/ai-chat';
 const REMOTE_AI_ENDPOINTS = ['/api/ai-chat', '/api/ai-chat/'];
 const MAX_HISTORY = 8;
+const USER_CONTEXT_TTL_MS = 45 * 1000;
 
 function normalize(value) {
   return String(value || '').toLowerCase().trim();
@@ -91,6 +93,31 @@ function dedupeLinks(links) {
     seen.add(key);
     return true;
   });
+}
+
+function getCachedUniversalSearch(query) {
+  const learningMatches = state.indexReady ? searchLearning(query) : [];
+  const contentMatches = state.contentIndexReady ? searchContent(query) : [];
+  const dedupe = new Set();
+  return [...contentMatches, ...learningMatches]
+    .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
+    .filter((item) => {
+      const key = `${item.label}__${item.href}`;
+      if (dedupe.has(key)) return false;
+      dedupe.add(key);
+      return true;
+    })
+    .slice(0, 8)
+    .map((item) => ({ label: item.label, href: item.href }));
+}
+
+function warmupIndexes() {
+  if (!state.indexReady && !state.loadingIndex) {
+    buildLearningIndex();
+  }
+  if (!state.contentIndexReady && !state.loadingContentIndex) {
+    buildContentIndex();
+  }
 }
 
 function isGreetingOrSmallTalk(query) {
@@ -206,6 +233,86 @@ async function getFirebaseContext() {
   const db = fsMod.getFirestore(app);
   state.firebaseCtx = { fsMod, db };
   return state.firebaseCtx;
+}
+
+async function getCurrentUser(auth) {
+  if (auth.currentUser) return auth.currentUser;
+
+  const authMod = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
+  return new Promise((resolve) => {
+    let done = false;
+    const timer = window.setTimeout(() => {
+      if (done) return;
+      done = true;
+      resolve(null);
+    }, 1200);
+
+    const unsub = authMod.onAuthStateChanged(auth, (user) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      unsub();
+      resolve(user || null);
+    });
+  });
+}
+
+async function getUserAssistantContext() {
+  const now = Date.now();
+  if (state.userContextCache && now - state.userContextCacheAt < USER_CONTEXT_TTL_MS) {
+    return state.userContextCache;
+  }
+
+  try {
+    const appMod = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js');
+    const authMod = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
+    const { fsMod, db } = await getFirebaseContext();
+    const app = appMod.getApps().length ? appMod.getApps()[0] : appMod.initializeApp(window.__env || {});
+    const auth = authMod.getAuth(app);
+    const user = await getCurrentUser(auth);
+
+    if (!user) {
+      const context = { loggedIn: false };
+      state.userContextCache = context;
+      state.userContextCacheAt = now;
+      return context;
+    }
+
+    const enrollmentsSnap = await fsMod.getDocs(fsMod.collection(db, 'users', user.uid, 'enrollments'));
+    const enrollments = enrollmentsSnap.docs.map((d) => d.data() || {});
+    const topCourses = enrollments
+      .sort((a, b) => Number(b.progress || 0) - Number(a.progress || 0))
+      .slice(0, 5)
+      .map((course) => ({
+        name: course.courseName || 'Untitled Course',
+        progress: Number(course.progress || 0),
+        category: course.categoryName || ''
+      }));
+
+    let completedExercises = 0;
+    try {
+      const completed = JSON.parse(localStorage.getItem('completedExercises') || '[]');
+      completedExercises = Array.isArray(completed) ? completed.length : 0;
+    } catch {
+      completedExercises = 0;
+    }
+
+    const context = {
+      loggedIn: true,
+      uid: user.uid,
+      email: user.email || '',
+      enrolledCount: enrollments.length,
+      completedExercises,
+      topCourses
+    };
+
+    state.userContextCache = context;
+    state.userContextCacheAt = now;
+    return context;
+  } catch (error) {
+    console.error('User context load failed:', error);
+    return { loggedIn: false };
+  }
 }
 
 function injectStyles() {
@@ -335,6 +442,26 @@ function injectStyles() {
       color: #233f67;
       max-width: 100%;
     }
+    .cc-ai-msg.typing {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+      min-width: 60px;
+    }
+    .cc-ai-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #5c77a3;
+      opacity: 0.28;
+      animation: ccAiPulse 1.1s ease-in-out infinite;
+    }
+    .cc-ai-dot:nth-child(2) { animation-delay: 0.16s; }
+    .cc-ai-dot:nth-child(3) { animation-delay: 0.32s; }
+    @keyframes ccAiPulse {
+      0%, 100% { transform: translateY(0); opacity: 0.25; }
+      50% { transform: translateY(-2px); opacity: 0.85; }
+    }
     .cc-ai-links {
       margin-top: 0.45rem;
       display: flex;
@@ -395,6 +522,11 @@ function injectStyles() {
       font-family: "Outfit", sans-serif;
       background: linear-gradient(115deg, #3f73ff, #22b99a);
       cursor: pointer;
+    }
+    .cc-ai-send:disabled,
+    .cc-ai-input:disabled {
+      opacity: 0.68;
+      cursor: not-allowed;
     }
     @media (max-width: 760px) {
       .cc-ai-toggle { bottom: 94px; right: 10px; }
@@ -466,6 +598,20 @@ function addMessage(messagesEl, role, text, links = []) {
 
   messagesEl.appendChild(item);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addTypingIndicator(messagesEl) {
+  const item = document.createElement('div');
+  item.className = 'cc-ai-msg bot typing';
+  item.id = 'cc-ai-typing';
+  item.innerHTML = '<span class="cc-ai-dot"></span><span class="cc-ai-dot"></span><span class="cc-ai-dot"></span>';
+  messagesEl.appendChild(item);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const node = document.getElementById('cc-ai-typing');
+  if (node) node.remove();
 }
 
 function getPageSummary() {
@@ -678,7 +824,9 @@ async function universalSearch(query) {
 
 async function askRemoteAssistant(query) {
   try {
-    const candidates = await universalSearch(query);
+    warmupIndexes();
+    const userContext = await getUserAssistantContext();
+    const candidates = getCachedUniversalSearch(query);
     const payload = {
       message: query,
       history: state.chatHistory.slice(-MAX_HISTORY),
@@ -686,6 +834,7 @@ async function askRemoteAssistant(query) {
         brand: BRAND_NAME,
         website: WEBSITE_DETAILS,
         developer: DEVELOPER_PROFILE,
+        userContext,
         currentPage: {
           title: document.title || '',
           path: window.location.pathname || ''
@@ -877,32 +1026,44 @@ function initAssistant() {
   const formEl = document.getElementById('cc-ai-form');
   const inputEl = document.getElementById('cc-ai-input');
   const quickEl = document.getElementById('cc-ai-quick');
+  const sendBtn = formEl?.querySelector('.cc-ai-send');
 
   const submitQuery = async (raw) => {
     const query = String(raw || '').trim();
     if (!query) return;
+    inputEl.value = '';
     addMessage(messagesEl, 'user', query);
     addToHistory('user', query);
+    addTypingIndicator(messagesEl);
+    if (inputEl) inputEl.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
 
-    const remote = await askRemoteAssistant(query);
-    if (remote) {
-      let links = dedupeLinks(remote.links || []);
-      if (remote.intent === 'search' || remote.intent === 'content' || remote.intent === 'learning') {
-        const lookup = remote.searchQuery || query;
-        const ranked = await universalSearch(lookup);
-        links = dedupeLinks([...links, ...ranked]).slice(0, 8);
+    try {
+      const remote = await askRemoteAssistant(query);
+      if (remote) {
+        let links = dedupeLinks(remote.links || []);
+        if (remote.intent === 'search' || remote.intent === 'content' || remote.intent === 'learning') {
+          const lookup = remote.searchQuery || query;
+          const ranked = getCachedUniversalSearch(lookup);
+          links = dedupeLinks([...links, ...ranked]).slice(0, 8);
+        }
+
+        removeTypingIndicator();
+        addMessage(messagesEl, 'bot', remote.text, links);
+        addToHistory('assistant', remote.text);
+        return;
       }
 
-      addMessage(messagesEl, 'bot', remote.text, links);
-      addToHistory('assistant', remote.text);
-      inputEl.value = '';
-      return;
+      const result = await answerQuery(query);
+      removeTypingIndicator();
+      addMessage(messagesEl, 'bot', result.text, result.links || []);
+      addToHistory('assistant', result.text);
+    } finally {
+      removeTypingIndicator();
+      if (inputEl) inputEl.disabled = false;
+      if (sendBtn) sendBtn.disabled = false;
+      if (inputEl) inputEl.focus();
     }
-
-    const result = await answerQuery(query);
-    addMessage(messagesEl, 'bot', result.text, result.links || []);
-    addToHistory('assistant', result.text);
-    inputEl.value = '';
   };
 
   addMessage(
@@ -912,6 +1073,8 @@ function initAssistant() {
   );
 
   initQuickActions(quickEl, inputEl, submitQuery);
+  warmupIndexes();
+  getUserAssistantContext();
 
   toggle.addEventListener('click', () => {
     panel.classList.toggle('open');
