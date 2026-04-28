@@ -166,28 +166,29 @@ function isDeveloperOrWebsiteQuery(query) {
 function getDeveloperWebsiteReply(query) {
   const q = normalize(query);
   const detailText = [
-    `${BRAND_NAME} details:`,
-    `Website: ${WEBSITE_DETAILS.name}`,
-    `Purpose: ${WEBSITE_DETAILS.purpose}`,
-    `Main Sections: ${WEBSITE_DETAILS.sections.join(', ')}`,
-    '',
-    'Developer Details:',
-    `Name: ${DEVELOPER_PROFILE.name}`,
-    `Qualification: ${DEVELOPER_PROFILE.degree}`,
-    `Contact: ${DEVELOPER_PROFILE.phone}`,
-    `Email: ${DEVELOPER_PROFILE.email}`
+    `**${BRAND_NAME} Details:**`,
+    ``,
+    `**Website:** ${WEBSITE_DETAILS.name}`,
+    `**Purpose:** ${WEBSITE_DETAILS.purpose}`,
+    `**Main Sections:** ${WEBSITE_DETAILS.sections.join(', ')}`,
+    ``,
+    `**Developer Details:**`,
+    `**Name:** ${DEVELOPER_PROFILE.name}`,
+    `**Qualification:** ${DEVELOPER_PROFILE.degree}`,
+    `**Contact:** +91 ${DEVELOPER_PROFILE.phone}`,
+    `**Email:** ${DEVELOPER_PROFILE.email}`
   ].join('\n');
 
   if (/\b(phone|number|contact)\b/.test(q)) {
     return {
-      text: `Developer Contact:\nName: ${DEVELOPER_PROFILE.name}\nPhone: ${DEVELOPER_PROFILE.phone}\nEmail: ${DEVELOPER_PROFILE.email}`,
+      text: `**Developer Contact:**\n\n**Name:** ${DEVELOPER_PROFILE.name}\n**Phone:** +91 ${DEVELOPER_PROFILE.phone}\n**Email:** ${DEVELOPER_PROFILE.email}`,
       links: [{ label: 'Open Profile Page', href: 'profile.html' }]
     };
   }
 
   if (/\b(email)\b/.test(q)) {
     return {
-      text: `Developer Email: ${DEVELOPER_PROFILE.email}\nName: ${DEVELOPER_PROFILE.name}`,
+      text: `**Developer Email:** ${DEVELOPER_PROFILE.email}\n**Name:** ${DEVELOPER_PROFILE.name}`,
       links: [{ label: 'Open Profile Page', href: 'profile.html' }]
     };
   }
@@ -425,9 +426,37 @@ function injectStyles() {
       border-radius: 12px;
       padding: 0.56rem 0.64rem;
       font-size: 0.8rem;
-      line-height: 1.5;
+      line-height: 1.6;
       border: 1px solid rgba(76, 111, 166, 0.2);
       white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .cc-ai-msg strong { font-weight: 700; color: #1a3a5f; }
+    .cc-ai-msg em { font-style: italic; }
+    .cc-ai-msg code {
+      background: rgba(76, 111, 166, 0.12);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+    }
+    .cc-ai-msg pre {
+      background: rgba(76, 111, 166, 0.08);
+      padding: 0.5rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 0.4rem 0;
+    }
+    .cc-ai-msg pre code {
+      background: none;
+      padding: 0;
+    }
+    .cc-ai-msg ul, .cc-ai-msg ol {
+      margin: 0.4rem 0;
+      padding-left: 1.2rem;
+    }
+    .cc-ai-msg li {
+      margin: 0.2rem 0;
     }
     .cc-ai-msg.user {
       align-self: flex-end;
@@ -578,10 +607,29 @@ function buildUI() {
   return { toggle, panel };
 }
 
+function parseMarkdown(text) {
+  let html = String(text || '')
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+  html = html.replace(/(<li>.*<\/li>)/s, (match) => {
+    if (match.includes('<ol>') || match.includes('<ul>')) return match;
+    return match.match(/^\d+\./) ? `<ol>${match}</ol>` : `<ul>${match}</ul>`;
+  });
+
+  return html;
+}
+
 function addMessage(messagesEl, role, text, links = []) {
   const item = document.createElement('div');
   item.className = `cc-ai-msg ${role}`;
-  item.textContent = text;
+  
+  const parsed = parseMarkdown(text);
+  item.innerHTML = parsed;
 
   if (links.length) {
     const wrap = document.createElement('div');
@@ -633,11 +681,12 @@ function getPageSummary() {
 function buildLearningPlan(topic) {
   const t = topic || 'web development';
   return [
-    `4-week learning plan for ${t}:`,
-    'Week 1: Basics + core concepts.',
-    'Week 2: Practice with guided exercises.',
-    'Week 3: Build a mini project.',
-    'Week 4: Revise weak areas and publish a final project.'
+    `**4-week learning plan for ${t}:**`,
+    ``,
+    `**Week 1:** Basics + core concepts`,
+    `**Week 2:** Practice with guided exercises`,
+    `**Week 3:** Build a mini project`,
+    `**Week 4:** Revise weak areas and publish a final project`
   ].join('\n');
 }
 
@@ -1069,7 +1118,7 @@ function initAssistant() {
   addMessage(
     messagesEl,
     'bot',
-    `Hi! I am ${BRAND_NAME}. Main website content, learning courses, roadmap, developer details, aur contact info sab bata sakta hoon.`
+    `**Hi! I am ${BRAND_NAME}.**\n\nMain website content, learning courses, roadmap, developer details, aur contact info sab bata sakta hoon. 🚀`
   );
 
   initQuickActions(quickEl, inputEl, submitQuery);
