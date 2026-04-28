@@ -5,15 +5,6 @@ const firebaseConfig = window.__env || {};
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-function sortDocsByOrder(docs) {
-  return [...docs].sort((a, b) => {
-    const orderA = Number(a.data()?.order ?? 0);
-    const orderB = Number(b.data()?.order ?? 0);
-    return orderA - orderB;
-  });
-}
-
-// Category color schemes
 const categoryColors = {
   'Web Development': { start: '#667eea', end: '#764ba2' },
   'App Development': { start: '#f093fb', end: '#f5576c' },
@@ -25,79 +16,138 @@ const categoryColors = {
   'Cybersecurity': { start: '#ff9a9e', end: '#fecfef' }
 };
 
+let categoryRecords = [];
+let activeSearchQuery = '';
+
+function sortDocsByOrder(docs) {
+  return [...docs].sort((a, b) => {
+    const orderA = Number(a.data()?.order ?? 0);
+    const orderB = Number(b.data()?.order ?? 0);
+    return orderA - orderB;
+  });
+}
+
+function normalizeText(value) {
+  return String(value ?? '').toLowerCase().trim();
+}
+
+function matchesCategorySearch(record, searchQuery) {
+  const q = normalizeText(searchQuery);
+  if (!q) return true;
+
+  const haystack = [
+    record.name,
+    record.description,
+    ...record.courseNames
+  ].map(normalizeText).join(' ');
+
+  return haystack.includes(q);
+}
+
+function renderCategories() {
+  const grid = document.getElementById('categoriesGrid');
+  if (!grid) return;
+
+  const filtered = categoryRecords.filter((record) => matchesCategorySearch(record, activeSearchQuery));
+  if (!filtered.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">No results</div>
+        <h3>No matching category or course</h3>
+        <p>Try a different search keyword.</p>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = '';
+  filtered.forEach((record) => {
+    const card = document.createElement('a');
+    card.href = `courses.html?category=${encodeURIComponent(record.id)}`;
+    card.className = 'category-card';
+    card.style.setProperty('--color-start', record.colors.start);
+    card.style.setProperty('--color-end', record.colors.end);
+    card.innerHTML = `
+      <span class="category-icon">${record.icon || 'C'}</span>
+      <h3 class="category-name">${record.name}</h3>
+      <p class="category-description">${record.description || ''}</p>
+      <div class="category-meta">
+        <span>${record.coursesCount} courses</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function setupLearningSearch() {
+  const searchForm = document.getElementById('learningSearchForm');
+  const searchInput = document.getElementById('learningSearchInput');
+  if (!searchForm || !searchInput) return;
+
+  searchForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const query = searchInput.value.trim();
+    const target = query ? `courses.html?q=${encodeURIComponent(query)}` : 'courses.html';
+    window.location.href = target;
+  });
+
+  searchInput.addEventListener('input', () => {
+    activeSearchQuery = searchInput.value.trim();
+    renderCategories();
+  });
+}
+
 async function loadCategories() {
   const grid = document.getElementById('categoriesGrid');
-  console.log('Loading categories for user website...');
-  
+  if (!grid) return;
+
   try {
     const snapshot = await getDocs(collection(db, 'learning_categories'));
     const categoryDocs = sortDocsByOrder(snapshot.docs);
-    
-    console.log('Categories found:', categoryDocs.length);
-    
+
     if (!categoryDocs.length) {
       grid.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">📚</div>
+          <div class="empty-state-icon">Empty</div>
           <h3>No categories available yet</h3>
-          <p>Check back soon for new learning content!</p>
+          <p>Check back soon for new learning content.</p>
         </div>
       `;
       return;
     }
 
-    grid.innerHTML = '';
-    let totalCourses = 0;
-    let totalExercises = 0;
+    const records = await Promise.all(categoryDocs.map(async (categoryDoc, index) => {
+      const cat = categoryDoc.data() || {};
+      const coursesSnap = await getDocs(collection(db, `learning_categories/${categoryDoc.id}/courses`));
+      const courseDocs = sortDocsByOrder(coursesSnap.docs);
+      const courseNames = courseDocs.map((courseDoc) => String(courseDoc.data()?.name || '').trim()).filter(Boolean);
 
-    for (const doc of categoryDocs) {
-      const cat = doc.data();
-      const colors = categoryColors[cat.name] || { start: '#667eea', end: '#764ba2' };
-      
-      console.log('Processing category:', cat.name);
-      
-      // Count courses
-      let coursesCount = 0;
-      try {
-        const coursesSnap = await getDocs(collection(db, `learning_categories/${doc.id}/courses`));
-        coursesCount = coursesSnap.size;
-        totalCourses += coursesCount;
+      return {
+        id: categoryDoc.id,
+        order: Number(cat.order ?? index),
+        name: cat.name || 'Untitled Category',
+        description: cat.description || '',
+        icon: cat.icon || 'C',
+        coursesCount: coursesSnap.size,
+        courseNames,
+        colors: categoryColors[cat.name] || { start: '#667eea', end: '#764ba2' }
+      };
+    }));
 
-        const exerciseCounts = await Promise.all(
-          coursesSnap.docs.map((courseDoc) => countCourseExercises(doc.id, courseDoc.id))
-        );
-        totalExercises += exerciseCounts.reduce((sum, count) => sum + count, 0);
-      } catch (err) {
-        console.log('Error counting for category:', err);
-      }
+    categoryRecords = records.sort((a, b) => a.order - b.order);
 
-      const card = document.createElement('a');
-      card.href = `courses.html?category=${doc.id}`;
-      card.className = 'category-card';
-      card.style.setProperty('--color-start', colors.start);
-      card.style.setProperty('--color-end', colors.end);
-      card.innerHTML = `
-        <span class="category-icon">${cat.icon || '📚'}</span>
-        <h3 class="category-name">${cat.name}</h3>
-        <p class="category-description">${cat.description || ''}</p>
-        <div class="category-meta">
-          <span>📖 ${coursesCount} courses</span>
-        </div>
-      `;
-      grid.appendChild(card);
-    }
+    const totalCourses = categoryRecords.reduce((sum, record) => sum + record.coursesCount, 0);
+    const totalCategoriesEl = document.getElementById('totalCategories');
+    const totalCoursesEl = document.getElementById('totalCourses');
+    if (totalCategoriesEl) totalCategoriesEl.textContent = String(categoryRecords.length);
+    if (totalCoursesEl) totalCoursesEl.textContent = String(totalCourses);
 
-    // Update stats
-    document.getElementById('totalCategories').textContent = categoryDocs.length;
-    document.getElementById('totalCourses').textContent = totalCourses;
-
-    console.log('Categories loaded successfully!');
-
+    renderCategories();
   } catch (error) {
     console.error('Error loading categories:', error);
     grid.innerHTML = `
       <div class="empty-state">
-        <div class="empty-state-icon">❌</div>
+        <div class="empty-state-icon">Error</div>
         <h3>Error loading categories</h3>
         <p>${error.message}</p>
       </div>
@@ -105,36 +155,6 @@ async function loadCategories() {
   }
 }
 
-async function countCourseExercises(categoryId, courseId) {
-  try {
-    const directExercisesSnap = await getDocs(
-      collection(db, `learning_categories/${categoryId}/courses/${courseId}/exercises`)
-    );
-
-    if (directExercisesSnap.size > 0) {
-      return directExercisesSnap.size;
-    }
-
-    const topicsSnap = await getDocs(
-      collection(db, `learning_categories/${categoryId}/courses/${courseId}/topics`)
-    );
-
-    let legacyCount = 0;
-    for (const topicDoc of topicsSnap.docs) {
-      const topicExercisesSnap = await getDocs(
-        collection(db, `learning_categories/${categoryId}/courses/${courseId}/topics/${topicDoc.id}/exercises`)
-      );
-      legacyCount += topicExercisesSnap.size;
-    }
-
-    return legacyCount;
-  } catch (error) {
-    console.log('Error counting course exercises:', error);
-    return 0;
-  }
-}
-
-// Mobile menu toggle
 const openDrawer = document.getElementById('openDrawer');
 const closeDrawer = document.getElementById('closeDrawer');
 const drawer = document.getElementById('sideDrawer');
@@ -161,5 +181,5 @@ if (overlay) {
   });
 }
 
-// Load categories on page load
+setupLearningSearch();
 loadCategories();

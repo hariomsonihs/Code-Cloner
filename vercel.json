@@ -15,6 +15,10 @@
       "headers": [{ "key": "Cache-Control", "value": "no-store" }]
     },
     {
+      "source": "/api/ai-chat",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    },
+    {
       "source": "/sitemap.xml",
       "headers": [
         { "key": "Content-Type", "value": "application/xml" },
