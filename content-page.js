@@ -337,6 +337,30 @@ function cardForResources(item) {
   `;
 }
 
+function cardForSnippets(item) {
+  // Store data for modal
+  resourcesData[item.id] = item;
+  
+  return `
+    <div class="content-card" onclick="openSnippetModal(${JSON.stringify(item).replace(/"/g, '&quot;')})" style="cursor:pointer">
+      ${banner("banner-project", "💻", "")}
+      <div class="card-top">
+        <div class="badge-row">
+          <span class="badge badge-blue">${escapeHtml(item.category || "Snippet")}</span>
+          <span class="badge badge-gray">${escapeHtml(item.language || "javascript")}</span>
+        </div>
+        <h3>${escapeHtml(item.title || "Code Snippet")}</h3>
+        <p class="card-desc">${escapeHtml(preview(item.description || ""))}</p>
+      </div>
+      <div class="card-bottom">
+        <div class="card-actions">
+          <span class="small-btn">View Code →</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderCard(item) {
   switch (kind) {
     case "articles":
@@ -349,6 +373,8 @@ function renderCard(item) {
       return cardForProjects(item);
     case "resources":
       return cardForResources(item);
+    case "snippets":
+      return cardForSnippets(item);
     default:
       return "";
   }

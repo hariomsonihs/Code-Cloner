@@ -10,7 +10,7 @@ service cloud.firestore {
     
     // ── Public read access for all content collections ──
     match /{collection}/{document} {
-      allow read: if collection in ['articles', 'tips', 'facts', 'projects', 'resources'];
+      allow read: if collection in ['articles', 'tips', 'facts', 'projects', 'resources', 'snippets'];
     }
     
     // ── Allow public write for reactions and views ONLY ──
@@ -39,6 +39,12 @@ service cloud.firestore {
     }
     
     match /resources/{resourceId} {
+      allow read: if true;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'views']);
+      allow write: if isAdmin();
+    }
+    
+    match /snippets/{snippetId} {
       allow read: if true;
       allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'views']);
       allow write: if isAdmin();
@@ -82,6 +88,15 @@ service cloud.firestore {
     }
     
     match /resources/{resourceId}/comments/{commentId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['name', 'text', 'createdAt']) 
+                    && request.resource.data.text is string 
+                    && request.resource.data.text.size() > 0 
+                    && request.resource.data.text.size() <= 1000;
+      allow delete: if isAdmin();
+    }
+    
+    match /snippets/{snippetId}/comments/{commentId} {
       allow read: if true;
       allow create: if request.resource.data.keys().hasAll(['name', 'text', 'createdAt']) 
                     && request.resource.data.text is string 

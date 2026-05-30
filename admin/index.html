@@ -46,6 +46,10 @@
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Articles
       <span class="nav-count" id="nc-articles">0</span>
     </a>
+    <a href="snippets.html" class="nav-item">
+      <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Snippets
+      <span class="nav-count" id="nc-snippets">0</span>
+    </a>
     <a href="tips.html" class="nav-item">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Tips & Tricks
       <span class="nav-count" id="nc-tips">0</span>
@@ -107,6 +111,11 @@
           <div class="stat-num" id="s-articles">0</div>
           <div class="stat-label">Articles</div>
         </a>
+        <a href="snippets.html" class="stat-card" style="text-decoration:none">
+          <div class="stat-icon" style="background:rgba(124,58,237,.1);color:var(--brand2)"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+          <div class="stat-num" id="s-snippets">0</div>
+          <div class="stat-label">Snippets</div>
+        </a>
         <a href="tips.html" class="stat-card" style="text-decoration:none">
           <div class="stat-icon" style="background:rgba(16,185,129,.1);color:var(--green)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
           <div class="stat-num" id="s-tips">0</div>
@@ -133,6 +142,7 @@
         <div class="card-head"><h2>Quick Actions</h2></div>
         <div style="display:flex;flex-wrap:wrap;gap:.7rem">
           <a href="articles.html" class="btn btn-primary"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Article</a>
+          <a href="snippets.html" class="btn btn-soft"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Snippet</a>
           <a href="tips.html" class="btn btn-soft"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Tip</a>
           <a href="facts.html" class="btn btn-soft"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Fact</a>
           <a href="projects.html" class="btn btn-soft"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Project</a>
@@ -145,6 +155,7 @@
         <div class="card-head"><h2>📊 Content Analytics</h2><span class="badge badge-blue">Views</span></div>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
           <button class="btn btn-primary btn-sm analytics-tab active" data-col="articles">Articles</button>
+          <button class="btn btn-soft btn-sm analytics-tab" data-col="snippets">Snippets</button>
           <button class="btn btn-soft btn-sm analytics-tab" data-col="tips">Tips</button>
           <button class="btn btn-soft btn-sm analytics-tab" data-col="facts">Facts</button>
           <button class="btn btn-soft btn-sm analytics-tab" data-col="projects">Projects</button>
@@ -236,7 +247,7 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
 
 document.getElementById("logoutBtn")?.addEventListener("click", () => signOut(auth));
 
-const cols = ["articles","tips","facts","projects","resources"];
+const cols = ["articles","snippets","tips","facts","projects","resources"];
 function loadStats() {
   cols.forEach(c => {
     onSnapshot(collection(db, c), snap => {
