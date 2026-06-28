@@ -78,7 +78,14 @@
           </select>
         </div>
         <div class="field full"><label>Description *</label><textarea class="textarea" id="f-description" rows="2" placeholder="Brief description..."></textarea></div>
-        <div class="field full"><label>Code *</label><textarea class="textarea" id="f-code" rows="8" placeholder="Paste your code here..." style="font-family:'Fira Code',monospace;font-size:.85rem"></textarea></div>
+        <!-- CODE FILES SECTION -->
+        <div class="field full">
+          <label style="display:flex;justify-content:space-between;align-items:center">
+            <span>Code Files *</span>
+            <button type="button" class="btn btn-primary btn-sm" id="addFileBtn">+ Add File</button>
+          </label>
+          <div id="codeFilesContainer" style="margin-top:.8rem;"></div>
+        </div>
         <div class="field full"><label>Explanation</label><textarea class="textarea" id="f-explanation" rows="3" placeholder="Explain how this code works..."></textarea></div>
         <div class="field full"><label>YouTube Video URL <span style="font-weight:400;color:#888;font-size:.8rem">(optional)</span></label><input class="input" id="f-videoUrl" placeholder="https://youtube.com/watch?v=..."/></div>
         <div class="field"><label>Instagram Link <span style="font-weight:400;color:#888;font-size:.8rem">(optional)</span></label><input class="input" id="f-instagramUrl" placeholder="https://instagram.com/..."/></div>
@@ -160,11 +167,56 @@ function formatDate(ts){if(!ts)return"—";const d=ts.toDate?ts.toDate():new Dat
 let editId = null;
 let allDocs = [];
 
+let codeFiles = [];
+
 function resetForm() {
-  ["f-title","f-category","f-language","f-description","f-code","f-explanation","f-videoUrl","f-instagramUrl","f-linkedinUrl"].forEach(id => document.getElementById(id).value = "");
+  ["f-title","f-category","f-language","f-description","f-explanation","f-videoUrl","f-instagramUrl","f-linkedinUrl"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("f-language").value = "javascript";
+  codeFiles = [];
+  renderCodeFiles();
   editId = null;
 }
+
+function renderCodeFiles() {
+  const container = document.getElementById("codeFilesContainer");
+  if (!codeFiles.length) {
+    container.innerHTML = `<div style="padding:1rem;background:rgba(95,142,255,.05);border:1px dashed rgba(95,142,255,.3);border-radius:8px;text-align:center;color:#888">No files added. Click "+ Add File" to add code files.</div>`;
+    return;
+  }
+  container.innerHTML = codeFiles.map((file, idx) => `
+    <div class="code-file-card" style="margin-bottom:.8rem;border:1px solid var(--line);border-radius:10px;padding:1rem;background:var(--surface)">
+      <div style="display:flex;gap:.6rem;margin-bottom:.6rem;align-items:center;flex-wrap:wrap">
+        <input class="input" value="${file.name}" onchange="updateFileName(${idx},this.value)" placeholder="filename.js" style="flex:1;min-width:150px"/>
+        <select class="select" onchange="updateFileLang(${idx},this.value)" style="width:130px">
+          <option value="javascript" ${file.language==='javascript'?'selected':''}>JavaScript</option>
+          <option value="python" ${file.language==='python'?'selected':''}>Python</option>
+          <option value="java" ${file.language==='java'?'selected':''}>Java</option>
+          <option value="css" ${file.language==='css'?'selected':''}>CSS</option>
+          <option value="html" ${file.language==='html'?'selected':''}>HTML</option>
+          <option value="cpp" ${file.language==='cpp'?'selected':''}>C++</option>
+          <option value="csharp" ${file.language==='csharp'?'selected':''}>C#</option>
+          <option value="php" ${file.language==='php'?'selected':''}>PHP</option>
+          <option value="ruby" ${file.language==='ruby'?'selected':''}>Ruby</option>
+          <option value="go" ${file.language==='go'?'selected':''}>Go</option>
+          <option value="typescript" ${file.language==='typescript'?'selected':''}>TypeScript</option>
+          <option value="sql" ${file.language==='sql'?'selected':''}>SQL</option>
+        </select>
+        <button type="button" class="btn btn-danger btn-sm" onclick="removeFile(${idx})">Delete</button>
+      </div>
+      <textarea class="textarea" rows="10" onchange="updateFileCode(${idx},this.value)" placeholder="Paste code here..." style="font-family:'Fira Code',monospace;font-size:.85rem">${file.code}</textarea>
+    </div>
+  `).join('');
+}
+
+window.updateFileName = function(idx, val) { codeFiles[idx].name = val; };
+window.updateFileLang = function(idx, val) { codeFiles[idx].language = val; };
+window.updateFileCode = function(idx, val) { codeFiles[idx].code = val; };
+window.removeFile = function(idx) { codeFiles.splice(idx, 1); renderCodeFiles(); };
+
+document.getElementById("addFileBtn").addEventListener("click", () => {
+  codeFiles.push({ name: `file${codeFiles.length + 1}.js`, language: "javascript", code: "" });
+  renderCodeFiles();
+});
 
 document.getElementById("clearBtn").addEventListener("click", resetForm);
 
@@ -172,13 +224,21 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   const title = document.getElementById("f-title").value.trim();
   const category = document.getElementById("f-category").value.trim();
   const description = document.getElementById("f-description").value.trim();
-  const code = document.getElementById("f-code").value.trim();
-  if (!title || !category || !description || !code) { toast("Title, Category, Description and Code are required.", "error"); return; }
+
+  if (!title || !category || !description) { toast("Title, Category and Description are required.", "error"); return; }
+  if (!codeFiles.length) { toast("At least one code file is required.", "error"); return; }
+
+  for (let i = 0; i < codeFiles.length; i++) {
+    if (!codeFiles[i].name.trim()) { toast(`File ${i+1}: Filename is required.`, "error"); return; }
+    if (!codeFiles[i].code.trim()) { toast(`File ${i+1}: Code is required.`, "error"); return; }
+  }
 
   const data = {
     title, category,
     language: document.getElementById("f-language").value,
-    description, code,
+    description,
+    codeFiles: codeFiles.map(f => ({ name: f.name.trim(), language: f.language, code: f.code.trim() })),
+    code: codeFiles[0]?.code || '',
     explanation: document.getElementById("f-explanation").value.trim(),
     videoUrl: document.getElementById("f-videoUrl").value.trim(),
     instagramUrl: document.getElementById("f-instagramUrl").value.trim(),
@@ -300,11 +360,20 @@ window.editDoc = function(id) {
   document.getElementById("f-category").value = d.category||"";
   document.getElementById("f-language").value = d.language||"javascript";
   document.getElementById("f-description").value = d.description||"";
-  document.getElementById("f-code").value = d.code||"";
   document.getElementById("f-explanation").value = d.explanation||"";
   document.getElementById("f-videoUrl").value = d.videoUrl||"";
   document.getElementById("f-instagramUrl").value = d.instagramUrl||"";
   document.getElementById("f-linkedinUrl").value = d.linkedinUrl||"";
+
+  if (d.codeFiles && d.codeFiles.length) {
+    codeFiles = d.codeFiles.map(f => ({ name: f.name, language: f.language, code: f.code }));
+  } else if (d.code) {
+    codeFiles = [{ name: "code." + (d.language || "js"), language: d.language || "javascript", code: d.code }];
+  } else {
+    codeFiles = [];
+  }
+  renderCodeFiles();
+
   document.getElementById("formTitle").textContent = "Edit Snippet";
   formCard.style.display = "block";
   formCard.scrollIntoView({behavior:"smooth"});

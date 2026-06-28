@@ -22,7 +22,13 @@
       .snippet-modal-body { padding: 1.5rem; }
       .snippet-meta { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
       .snippet-desc { color: var(--text); font-size: 1rem; line-height: 1.7; margin-bottom: 1.5rem; padding: 1rem; background: rgba(95,142,255,.05); border-radius: 8px; border-left: 3px solid var(--brand-2); }
-      .snippet-code-block { background: #1e1e1e; border-radius: 12px; padding: 1.2rem; margin: 1.5rem 0; position: relative; overflow-x: auto; border: 1px solid rgba(255,255,255,.1); }
+      .code-tabs { display: flex; gap: .5rem; margin: 1.5rem 0 0; padding: 0 .5rem; overflow-x: auto; border-bottom: 2px solid var(--line); }
+      .code-tab { padding: .7rem 1.2rem; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: .9rem; font-weight: 600; font-family: 'Fira Code', monospace; border-radius: 8px 8px 0 0; transition: .2s; white-space: nowrap; position: relative; }
+      .code-tab:hover { background: rgba(95,142,255,.1); color: var(--brand-2); }
+      .code-tab.active { color: var(--brand-2); background: rgba(95,142,255,.15); }
+      .code-tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: var(--brand-2); }
+      .snippet-code-block { background: #1e1e1e; border-radius: 0 12px 12px 12px; padding: 1.2rem; margin: 0 0 1.5rem; position: relative; overflow-x: auto; border: 1px solid rgba(255,255,255,.1); display: none; }
+      .snippet-code-block.active { display: block; }
       .snippet-code-block pre { margin: 0; overflow-x: auto; }
       .snippet-code-block code { font-family: 'Fira Code', 'Consolas', monospace; font-size: .9rem; line-height: 1.6; display: block; }
       .copy-btn { position: absolute; top: 1rem; right: 1rem; padding: .6rem 1rem; background: rgba(95,142,255,.2); border: 1px solid rgba(95,142,255,.3); border-radius: 8px; color: #fff; font-size: .85rem; cursor: pointer; transition: .2s; font-weight: 600; z-index: 10; }
@@ -35,6 +41,7 @@
       @media (max-width: 768px) {
         .snippet-modal-content { max-height: 95vh; }
         .snippet-modal-title { font-size: 1.2rem; }
+        .code-tab { padding: .6rem 1rem; font-size: .85rem; }
         .snippet-code-block code { font-size: .8rem; }
         .snippet-video iframe { height: 250px; }
       }
@@ -164,11 +171,11 @@
         // Regular YouTube video
         let match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
         if (match) return `https://www.youtube.com/embed/${match[1]}`;
-        
+
         // YouTube Shorts
         match = url.match(/youtube\.com\/shorts\/([^?\s]+)/);
         if (match) return `https://www.youtube.com/embed/${match[1]}`;
-        
+
         return null;
       }
 
@@ -191,24 +198,39 @@
       window.openSnippetModal = function(snippet) {
         document.getElementById("modalTitle").textContent = snippet.title;
         const embedUrl = getYouTubeEmbedUrl(snippet.videoUrl);
-        
-        // Unescape code if it's HTML encoded
-        const cleanCode = snippet.code ? unescapeHtml(snippet.code) : '';
-        
+
+        const codeFiles = snippet.codeFiles && snippet.codeFiles.length ? snippet.codeFiles : (snippet.code ? [{ name: 'code.' + (snippet.language || 'js'), language: snippet.language || 'javascript', code: snippet.code }] : []);
+
+        let tabsHtml = '';
+        let codeBlocksHtml = '';
+
+        if (codeFiles.length > 0) {
+          tabsHtml = '<div class="code-tabs">' + codeFiles.map((file, idx) =>
+            `<button class="code-tab ${idx === 0 ? 'active' : ''}" onclick="switchTab(${idx})">${esc(file.name)}</button>`
+          ).join('') + '</div>';
+
+          codeBlocksHtml = codeFiles.map((file, idx) => {
+            const cleanCode = file.code ? unescapeHtml(file.code) : '';
+            return `
+              <div class="snippet-code-block ${idx === 0 ? 'active' : ''}" data-tab="${idx}">
+                <button class="copy-btn" onclick="copyCode(\`${cleanCode.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, this)">Copy Code</button>
+                <pre><code class="language-${file.language || 'javascript'}">${esc(cleanCode)}</code></pre>
+              </div>
+            `;
+          }).join('');
+        }
+
         document.getElementById("modalBody").innerHTML = `
           <div class="snippet-meta">
             <span class="badge badge-blue">${esc(snippet.category || "General")}</span>
             <span class="badge badge-gray">${esc(snippet.language || "javascript")}</span>
+            ${codeFiles.length > 1 ? `<span class="badge badge-green">${codeFiles.length} files</span>` : ''}
           </div>
-          
+
           ${snippet.description ? `<div class="snippet-desc">${linkify(snippet.description.replace(/\n/g, '<br>'))}</div>` : ''}
-          
-          ${cleanCode ? `
-            <div class="snippet-code-block">
-              <button class="copy-btn" data-code="copy-snippet">Copy Code</button>
-              <pre><code class="language-${snippet.language || 'javascript'}">${esc(cleanCode)}</code></pre>
-            </div>
-          ` : ''}
+
+          ${tabsHtml}
+          ${codeBlocksHtml}
 
           ${snippet.explanation ? `
             <div class="snippet-explanation">
@@ -242,17 +264,18 @@
           ` : ''}
         `;
 
-        // Add copy button event listener
-        const copyBtn = document.querySelector('.copy-btn[data-code="copy-snippet"]');
-        if (copyBtn) {
-          copyBtn.addEventListener('click', function() {
-            copyCode(cleanCode, this);
-          });
-        }
-
         Prism.highlightAll();
         modal.classList.add("show");
         document.body.style.overflow = "hidden";
+      };
+
+      window.switchTab = function(idx) {
+        document.querySelectorAll('.code-tab').forEach((tab, i) => {
+          tab.classList.toggle('active', i === idx);
+        });
+        document.querySelectorAll('.snippet-code-block').forEach((block, i) => {
+          block.classList.toggle('active', i === idx);
+        });
       };
 
       window.copyCode = copyCode;
